@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>إتمام الطلب | NAVITO</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon"
+        href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🛍️</text></svg>">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- Theme & Language Persistence Script - Prevents Flash -->
+    <script>
+        (function () {
+            const currentUser = localStorage.getItem('navito_current_user');
+            if (!currentUser) {
+                window.location.href = 'login.html';
+                return;
+            }
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            document.documentElement.className = savedTheme + '-mode';
+
+            const savedLang = localStorage.getItem('navito_language') || 'ar';
+            document.documentElement.lang = savedLang;
+        })();
+    </script>
+    <style>
+        body {
+            font-family: 'Cairo', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            overflow-x: hidden;
+        }
+
+        .checkout-container {
+
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 1.5rem;
+        }
+
+        .checkout-grid {
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        @media (max-width: 968px) {
+            .checkout-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .checkout-section {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: 2rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .section-number {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, var(--accent-color), var(--accent-hover));
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.9rem;
+        }
+
+        .section-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin: 0;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 0.85rem 1rem;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            color: var(--text-primary);
+            font-size: 1rem;
+            transition: var(--transition);
+        }
+
+        .form-input::placeholder {
+            color: var(--text-secondary);
+            opacity: 0.6;
+        }
+
+        .form-input:focus {
+            border-color: var(--accent-color);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(201, 160, 122, 0.15);
+            background: var(--bg-secondary);
+        }
+
+        /* Fix autofill styling */
+        .form-input:-webkit-autofill,
+        .form-input:-webkit-autofill:hover,
+        .form-input:-webkit-autofill:focus {
+            -webkit-text-fill-color: var(--text-primary) !important;
+            -webkit-box-shadow: 0 0 0 1000px var(--bg-secondary) inset !important;
+            box-shadow: 0 0 0 1000px var(--bg-secondary) inset !important;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        @media (max-width: 500px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .payment-methods {
+            display: grid;
+            gap: 1rem;
+        }
+
+        .payment-option {
+            position: relative;
+            border: 2px solid var(--border-color);
+            background: var(--bg-secondary);
+            padding: 1rem;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .payment-option:hover {
+            border-color: var(--accent-color);
+            background: var(--card-bg);
+        }
+
+        .payment-option input[type="radio"] {
+            width: 20px;
+            height: 20px;
+            accent-color: var(--accent-color);
+        }
+
+        .payment-option.selected {
+            border-color: var(--accent-color);
+            background: rgba(201, 160, 122, 0.1);
+        }
+
+        .payment-icon {
+            font-size: 1.5rem;
+        }
+
+        .payment-info {
+            flex: 1;
+        }
+
+        .payment-title {
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.25rem;
+        }
+
+        .payment-desc {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        /* Order Summary */
+        .summary-sticky {
+            position: sticky;
+            top: 20px;
+        }
+
+        .order-item {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.25rem;
+            padding-bottom: 1.25rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .order-item:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+
+        .item-image {
+            width: 80px;
+            height: 80px;
+            object-fit: cover;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border-color);
+        }
+
+        .item-details {
+            flex: 1;
+        }
+
+        .item-name {
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.25rem;
+            font-size: 0.95rem;
+        }
+
+        .item-quantity {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .item-price {
+            font-weight: 700;
+            color: var(--accent-color);
+            font-size: 1rem;
+        }
+
+        .summary-line {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.75rem;
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+
+        .summary-divider {
+            height: 1px;
+            background: var(--border-color);
+            margin: 1.25rem 0;
+        }
+
+        .summary-total {
+            display: flex;
+            justify-content: space-between;
+            font-size: 1.35rem;
+            font-weight: 800;
+            color: var(--text-primary);
+            padding-top: 0.5rem;
+        }
+
+        .summary-total-amount {
+            background: linear-gradient(90deg, var(--accent-color), var(--accent-hover));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .btn-checkout {
+            width: 100%;
+            padding: 1.1rem 1.5rem;
+            background: linear-gradient(135deg, var(--accent-color), var(--accent-hover));
+            color: white;
+            border: none;
+            border-radius: 50px;
+            font-weight: 700;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: var(--transition);
+            margin-top: 1.5rem;
+            box-shadow: 0 4px 12px rgba(201, 160, 122, 0.3);
+        }
+
+        .btn-checkout:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(201, 160, 122, 0.5);
+        }
+
+        .secure-badge {
+            text-align: center;
+            margin-top: 1rem;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .page-header {
+            margin-bottom: 1rem;
+        }
+
+        .page-title {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+        }
+
+        .page-subtitle {
+            color: var(--text-secondary);
+            font-size: 1rem;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Top Bar -->
+    <div class="top-bar">
+        <div class="container top-bar-container">
+            <div class="top-bar-left">
+                <span data-i18n="welcome_back">مرحباً بكم في Navito</span>
+            </div>
+            <div class="top-bar-right">
+                <a href="#" class="top-bar-link"><span data-i18n="download_app">تحميل التطبيق</span></a>
+                <a href="#" class="top-bar-link"><span data-i18n="help">المساعدة</span></a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <header>
+        <div class="logo">
+            <a href="index.html">
+                <h1>NAVITO</h1>
+            </a>
+        </div>
+
+        <div class="header-actions">
+            <!-- Language Toggle (Consistent with index) -->
+            <div class="nav-item-luxury" id="lang-toggle-nav" onclick="toggleLanguage()">
+                <div class="icon-display">🌐</div>
+                <span id="lang-text" style="font-weight: 700;">EN</span>
+            </div>
+
+            <!-- Theme Toggle -->
+            <div class="nav-item-luxury" id="theme-toggle" onclick="toggleTheme()">
+                <div class="icon-display" id="theme-icon">☀️</div>
+                <span id="theme-text" data-i18n="dark_mode">الوضع الليلي</span>
+            </div>
+
+            <div class="nav-item-luxury" onclick="window.location.href='index.html'">
+                <div class="icon-display">🏠</div>
+                <span data-i18n="home">الرئيسية</span>
+            </div>
+        </div>
+    </header>
+
+    <div class="checkout-container">
+        <div class="page-header">
+            <h2 class="page-title" data-i18n="checkout">إتمام الطلب</h2>
+            <p class="page-subtitle" data-i18n="checkout_subtitle">يرجى ملء بيانات الشحن لإكمال طلبك بنجاح</p>
+        </div>
+
+        <form id="checkout-form" onsubmit="handleCheckout(event)">
+            <div class="checkout-grid">
+                <!-- Shipping Information -->
+                <div>
+                    <div class="checkout-section">
+                        <div class="section-header">
+                            <div class="section-number">1</div>
+                            <h3 class="section-title" data-i18n="shipping_info">معلومات الشحن</h3>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="name" data-i18n="full_name">الاسم الكامل *</label>
+                            <input type="text" id="name" class="form-input" required data-i18n="full_name"
+                                placeholder="الاسم الكامل">
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label" for="email" data-i18n="email">البريد الإلكتروني *</label>
+                                <input type="email" id="email" class="form-input" required data-i18n="email"
+                                    placeholder="example@mail.com">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="phone" data-i18n="phone">رقم الهاتف *</label>
+                                <input type="tel" id="phone" class="form-input" required data-i18n="phone"
+                                    placeholder="+216XXXXXXXX">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="address" data-i18n="full_address">العنوان الكامل *</label>
+                            <input type="text" id="address" class="form-input" required data-i18n="full_address"
+                                placeholder="الحي، الشارع، رقم المنزل">
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label" for="city" data-i18n="city">المدينة *</label>
+                                <input type="text" id="city" class="form-input" required data-i18n="city"
+                                    placeholder="casablanca">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="postal" data-i18n="postal">الرمز البريدي</label>
+                                <input type="text" id="postal" class="form-input" data-i18n="postal"
+                                    placeholder="12345">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="checkout-section" style="margin-top: 2rem;">
+                        <div class="section-header">
+                            <div class="section-number">2</div>
+                            <h3 class="section-title" data-i18n="payment_method">طريقة الدفع</h3>
+                        </div>
+
+                        <div class="payment-methods">
+                            <label class="payment-option selected">
+                                <input type="radio" name="payment" value="cod" checked>
+                                <div class="payment-icon">💵</div>
+                                <div class="payment-info">
+                                    <div class="payment-title" data-i18n="cash_on_delivery">الدفع عند الاستلام</div>
+                                    <div class="payment-desc" data-i18n="cod_desc">ادفع نقداً عند استلام الطلب</div>
+                                </div>
+                            </label>
+
+                            <label class="payment-option">
+                                <input type="radio" name="payment" value="card">
+                                <div class="payment-icon">💳</div>
+                                <div class="payment-info">
+                                    <div class="payment-title" data-i18n="card_payment">الدفع الإلكتروني</div>
+                                    <div class="payment-desc" data-i18n="card_desc">بطاقة ائتمانية أو مدى (قريباً)</div>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Order Summary -->
+                <div class="summary-sticky">
+                    <div class="checkout-section">
+                        <div class="section-header">
+                            <div class="section-number">3</div>
+                            <h3 class="section-title" data-i18n="order_summary">ملخص الطلب</h3>
+                        </div>
+
+                        <div id="checkout-items">
+                            <!-- Items rendered by JS -->
+                        </div>
+
+                        <div class="summary-divider"></div>
+
+                        <div class="summary-line">
+                            <span data-i18n="subtotal">المجموع الفرعي</span>
+                            <span id="checkout-subtotal">0.00</span>
+                        </div>
+                        <div class="summary-line">
+                            <span data-i18n="shipping">الشحن</span>
+                            <span id="checkout-shipping" data-i18n="free">مجاني</span>
+                        </div>
+
+                        <div class="summary-divider"></div>
+
+                        <div class="summary-total">
+                            <span data-i18n="total">الإجمالي</span>
+                            <span class="summary-total-amount" id="checkout-total">0.00</span>
+                        </div>
+
+                        <button type="submit" class="btn-checkout" data-i18n="confirm_order">
+                            تأكيد الطلب
+                        </button>
+
+                        <div class="secure-badge">
+                            <span>🔒</span>
+                            <span data-i18n="secure_msg">جميع المعاملات مشفرة وآمنة</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Footer -->
+    <footer
+        style="background: var(--card-bg); padding: 2rem; border-top: 1px solid var(--border-color); margin-top: 4rem; text-align: center; color: var(--text-secondary);">
+        <p data-i18n="copyright">حقوق النشر © 2024 NAVITO</p>
+    </footer>
+
+    <div id="toast-container" class="toast-container"></div>
+    <script src="utils.js"></script>
+    <script src="i18n.js?v=1.1"></script>
+    <script src="app.js?v=1.1"></script>
+    <script>
+        // Initialize Page
+        document.addEventListener('DOMContentLoaded', () => {
+            // Theme already applied to HTML tag by head script
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            const isDark = savedTheme === 'dark';
+
+            const icon = document.getElementById('theme-icon');
+            const text = document.getElementById('theme-text');
+            if (icon) icon.textContent = isDark ? '🌙' : '☀️';
+            if (text) text.textContent = isDark ? (typeof t === 'function' ? t('light_mode') : 'الوضع النهاري') : (typeof t === 'function' ? t('dark_mode') : 'الوضع الليلي');
+
+            // Make sure cart is loaded from localStorage before rendering
+            if (window.CartManager && typeof window.CartManager.init === 'function') {
+                window.CartManager.init();
+            }
+
+            // Init checkout page
+            if (window.renderCheckoutPage) {
+                window.renderCheckoutPage();
+            } else {
+                setTimeout(() => {
+                    if (window.renderCheckoutPage) window.renderCheckoutPage();
+                }, 300);
+            }
+        });
+
+        // Payment option selection
+        document.querySelectorAll('.payment-option').forEach(option => {
+            option.addEventListener('click', function () {
+                document.querySelectorAll('.payment-option').forEach(opt => opt.classList.remove('selected'));
+                this.classList.add('selected');
+            });
+        });
+    </script>
+</body>
+
+</html>

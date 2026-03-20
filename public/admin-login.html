@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تسجيل دخول الإدارة | NAVITO</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon"
+        href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🛡️</text></svg>">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- Theme & Language Persistence Script - Prevents Flash -->
+    <script>
+        (function () {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            document.documentElement.className = savedTheme + '-mode';
+
+            const savedLang = localStorage.getItem('navito_language') || 'ar';
+            document.documentElement.lang = savedLang;
+
+            if (savedLang === 'en') {
+                document.write('<style id="i18n-hide-body">body { opacity: 0 !important; }</style>');
+                setTimeout(function () {
+                    document.documentElement.classList.add('i18n-ready');
+                }, 1500);
+            } else {
+                document.documentElement.classList.add('i18n-ready');
+            }
+        })();
+    </script>
+    <style>
+        body {
+            font-family: 'Cairo', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            overflow-x: hidden;
+        }
+
+        .auth-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 90vh;
+            padding: 2rem;
+            background-image:
+                radial-gradient(circle at 10% 20%, rgba(99, 102, 241, 0.05) 0%, transparent 20%),
+                radial-gradient(circle at 90% 80%, rgba(168, 85, 247, 0.05) 0%, transparent 20%);
+        }
+
+        .auth-card {
+            background: var(--card-bg);
+            padding: 3rem;
+            border-radius: var(--radius-lg);
+            width: 100%;
+            max-width: 450px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            border: 1px solid var(--border-color);
+            position: relative;
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+        }
+
+        .auth-header {
+            text-align: center;
+            margin-bottom: 2.5rem;
+        }
+
+        .auth-logo {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            display: block;
+        }
+
+        .auth-header h2 {
+            font-size: 1.75rem;
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 0.9rem 1.2rem;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            transition: var(--transition);
+            font-size: 1rem;
+        }
+
+        .form-input:focus {
+            border-color: var(--accent-color);
+            outline: none;
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .auth-btn {
+            width: 100%;
+            padding: 1rem;
+            border-radius: 12px;
+            border: none;
+            background: linear-gradient(135deg, var(--accent-color), var(--accent-hover));
+            color: white;
+            font-weight: 700;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: var(--transition);
+            margin-top: 1.5rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .auth-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px -10px var(--accent-color);
+        }
+
+        .back-home {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 1.2rem;
+            width: 35px;
+            height: 35px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.05);
+            transition: var(--transition);
+        }
+
+        .back-home:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="auth-container">
+        <div class="auth-card">
+            <a href="index.html" class="back-home" title="عودة للرئيسية">✕</a>
+
+            <div class="auth-header">
+                <span class="auth-logo">🔒</span>
+                <h2>لوحة التحكم</h2>
+                <p style="color: var(--text-secondary);">يرجى تسجيل الدخول للوصول</p>
+            </div>
+
+            <form id="admin-login-form" onsubmit="handleAdminLogin(event)">
+                <div class="form-group">
+                    <label class="form-label">اسم المستخدم</label>
+                    <input type="text" id="username" class="form-input" placeholder="Admin" required
+                        autocomplete="username">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">كلمة المرور</label>
+                    <input type="password" id="password" class="form-input" placeholder="••••••••" required
+                        autocomplete="current-password">
+                </div>
+
+                <button type="submit" class="auth-btn">
+                    <span>دخول آمن</span>
+                    <span>→</span>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- admin.js removed to prevent redirect loop -->
+    <script>
+        // Override any auto-redirect from admin.js if possible, 
+        // or ensure admin.js doesn't redirect if on admin-login.html
+        // Actually best to inline the logic here to avoid circular dependency
+
+        function handleAdminLogin(e) {
+            e.preventDefault();
+
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const btn = document.querySelector('.auth-btn');
+
+            // Simulate loading
+            const originalText = btn.innerHTML;
+            btn.innerHTML = 'جاري التحقق...';
+            btn.style.opacity = '0.7';
+
+            setTimeout(() => {
+                // Hardcoded credentials for Demo Mode
+                if (username.toLowerCase() === 'admin' && password === 'admin123') {
+                    // Set session
+                    localStorage.setItem('admin_token', 'demo_token_v1');
+
+                    // Show success
+                    showToast('تم تسجيل الدخول بنجاح', 'success');
+
+                    setTimeout(() => {
+                        window.location.href = 'admin.html';
+                    }, 1000);
+                } else {
+                    // Reset button
+                    btn.innerHTML = originalText;
+                    btn.style.opacity = '1';
+                    showToast('بيانات الدخول غير صحيحة', 'error');
+                }
+            }, 800);
+        }
+
+        // Inline definition of showToast if admin.js is not loaded or causing issues
+        if (typeof showToast !== 'function') {
+            window.showToast = function (message, type = 'success') {
+                const container = document.getElementById('toast-container');
+                if (!container) return;
+                const toast = document.createElement('div');
+                toast.className = `toast ${type}`;
+                toast.textContent = message;
+                toast.style.cssText = `
+                    background: ${type === 'success' ? '#10B981' : '#EF4444'};
+                    color: white;
+                    padding: 1rem 2rem;
+                    border-radius: 8px;
+                    margin-bottom: 1rem;
+                    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+                    animation: slideIn 0.3s ease;
+                `;
+                container.appendChild(toast);
+                setTimeout(() => toast.remove(), 3000);
+            }
+        }
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,976 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="google" content="notranslate">
+    <title data-i18n="menu_sales">المبيعات | لوحة الإدارة</title>
+    <link rel="stylesheet" href="style.css">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&family=Outfit:wght@300;400;600;700&display=swap"
+        rel="stylesheet">
+    <!-- Theme & Language Persistence Script - Prevents Flash -->
+    <script>
+        (function () {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            document.documentElement.className = savedTheme + '-mode';
+
+            const savedLang = localStorage.getItem('navito_language') || 'ar';
+            document.documentElement.lang = savedLang;
+
+            if (savedLang === 'en') {
+                document.write('<style id="i18n-hide-body">body { opacity: 0 !important; }</style>');
+                setTimeout(function () {
+                    document.documentElement.classList.add('i18n-ready');
+                }, 1500);
+            } else {
+                document.documentElement.classList.add('i18n-ready');
+            }
+        })();
+    </script>
+    <style>
+        /* Enhanced Sales Page Styles */
+        .sales-stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            position: relative;
+            padding: 1.75rem;
+            border-radius: var(--radius-lg);
+            color: white;
+            overflow: hidden;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            cursor: pointer;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.2);
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .stat-card:hover::before {
+            opacity: 1;
+        }
+
+        .stat-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .stat-card-icon {
+            font-size: 2.5rem;
+            opacity: 0.9;
+        }
+
+        .stat-card-label {
+            font-size: 0.95rem;
+            opacity: 0.95;
+            font-weight: 500;
+        }
+
+        .stat-card-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            line-height: 1;
+        }
+
+        .stat-card-trend {
+            font-size: 0.85rem;
+            margin-top: 0.5rem;
+            opacity: 0.9;
+        }
+
+        /* Specific Card Colors for Sales Page */
+        .stat-card-total {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+            box-shadow: 0 4px 15px rgba(118, 75, 162, 0.4);
+        }
+
+        .stat-card-pending {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%) !important;
+            box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4);
+        }
+
+        .stat-card-processing {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important;
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
+        }
+
+        .stat-card-completed {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
+        }
+
+        .controls-section {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            display: grid;
+            grid-template-columns: 1fr auto auto auto;
+            gap: 1rem;
+            align-items: stretch;
+        }
+
+        .search-box {
+            position: relative;
+            display: flex;
+            align-items: stretch;
+            margin-top: 0.3rem;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 0.9rem 1.25rem 0.9rem 3.25rem;
+            border: 2px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            background: linear-gradient(135deg, var(--bg-primary) 0%, var(--card-bg) 100%);
+            color: var(--text-primary);
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            font-weight: 500;
+        }
+
+        .search-box input:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15), 0 4px 16px rgba(0, 0, 0, 0.1);
+        }
+
+        .search-box input::placeholder {
+            color: var(--text-secondary);
+            font-weight: 400;
+        }
+
+        .search-box::before {
+            content: '🔍';
+            position: absolute;
+            left: 1.25rem;
+            top: 0;
+            bottom: 20px;
+            display: flex;
+            align-items: center;
+            font-size: 1.3rem;
+            opacity: 0.7;
+            transition: all 0.3s ease;
+            pointer-events: none;
+        }
+
+        .search-box:focus-within::before {
+            opacity: 1;
+            transform: scale(1.1);
+        }
+
+        .filter-group {
+            display: flex;
+            align-items: stretch;
+        }
+
+        .filter-select {
+            padding: 0.9rem 1.25rem;
+            border-radius: var(--radius-lg);
+            border: 2px solid var(--border-color);
+            background: linear-gradient(135deg, var(--card-bg) 0%, var(--bg-primary) 100%);
+            color: var(--text-primary);
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-width: 180px;
+            font-size: 0.95rem;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            position: relative;
+            appearance: none;
+            background-image: linear-gradient(135deg, var(--card-bg) 0%, var(--bg-primary) 100%);
+            height: 100%;
+        }
+
+        .filter-select:hover {
+            border-color: var(--accent-color);
+            box-shadow: 0 4px 16px rgba(99, 102, 241, 0.2);
+        }
+
+        .filter-select:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 0.75rem;
+            align-items: stretch;
+        }
+
+        .btn-action {
+            padding: 0.9rem 1.5rem;
+            border-radius: var(--radius-lg);
+            border: 2px solid transparent;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+            position: relative;
+            overflow: hidden;
+            white-space: nowrap;
+            height: 100%;
+        }
+
+        .btn-action::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .btn-action:hover::before {
+            left: 100%;
+        }
+
+        .btn-action:hover {
+            box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
+        }
+
+        .btn-action:active {
+            box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+        }
+
+        .btn-action span {
+            font-size: 1.1rem;
+        }
+
+        @media (max-width: 1200px) {
+            .controls-section {
+                grid-template-columns: 1fr auto;
+                grid-template-rows: auto auto;
+            }
+
+            .search-box {
+                grid-column: 1 / -1;
+            }
+
+            .filter-group {
+                grid-column: 1;
+            }
+
+            .action-buttons {
+                grid-column: 2;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .controls-section {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+
+            .search-box,
+            .filter-group,
+            .action-buttons {
+                grid-column: 1;
+            }
+
+            .action-buttons {
+                width: 100%;
+            }
+
+            .btn-action {
+                flex: 1;
+            }
+        }
+
+        .premium-order-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: 1.75rem;
+            margin-bottom: 1.25rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .premium-order-card::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            height: 100%;
+            width: 4px;
+            background: var(--accent-color);
+            transform: scaleY(0);
+            transition: transform 0.3s ease;
+        }
+
+        .premium-order-card:hover {
+            border-color: var(--accent-color);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+            transform: translateX(-4px);
+        }
+
+        .premium-order-card:hover::before {
+            transform: scaleY(1);
+        }
+
+        .order-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 1.25rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .order-info h3 {
+            font-size: 1.25rem;
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+        }
+
+        .order-meta {
+            display: flex;
+            gap: 1rem;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        .order-meta span {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .status-badge {
+            padding: 0.6rem 1.25rem;
+            border-radius: 999px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            position: relative;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            transition: all 0.3s ease;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .status-badge::before {
+            content: '';
+            position: absolute;
+            inset: -2px;
+            border-radius: 999px;
+            padding: 2px;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0.1));
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            mask-composite: exclude;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .status-badge:hover::before {
+            opacity: 1;
+        }
+
+        .status-badge:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+        }
+
+        .status-badge.pending {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);
+        }
+
+        .status-badge.processing {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+        }
+
+        .status-badge.completed {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+        }
+
+        .status-badge.cancelled {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+        }
+
+        .status-icon {
+            font-size: 1rem;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+
+            50% {
+                opacity: 0.8;
+                transform: scale(1.1);
+            }
+        }
+
+        .order-details-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 1.25rem;
+            margin-bottom: 1.25rem;
+        }
+
+        .detail-item {
+            background: rgba(99, 102, 241, 0.05);
+            padding: 1rem;
+            border-radius: var(--radius-md);
+            border: 1px solid rgba(99, 102, 241, 0.1);
+        }
+
+        .detail-label {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+
+        .detail-value {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .detail-value.highlight {
+            color: var(--accent-color);
+            font-size: 1.3rem;
+        }
+
+        .products-preview {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .product-thumb {
+            width: 60px;
+            height: 60px;
+            object-fit: cover;
+            border-radius: var(--radius-md);
+            border: 2px solid var(--border-color);
+            transition: all 0.3s ease;
+        }
+
+        .product-thumb:hover {
+            transform: scale(1.1);
+            border-color: var(--accent-color);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .more-products {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, var(--accent-color), #764ba2);
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: white;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: var(--text-secondary);
+        }
+
+        .empty-state-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        .empty-state-text {
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        @media (max-width: 768px) {
+            .controls-section {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .search-box {
+                min-width: 100%;
+            }
+
+            .filter-group {
+                width: 100%;
+                justify-content: space-between;
+            }
+
+            .action-buttons {
+                width: 100%;
+                justify-content: stretch;
+            }
+
+            .btn-action {
+                flex: 1;
+            }
+        }
+    </style>
+</head>
+
+<body class="admin-body">
+
+    <div class="admin-container">
+        <!-- Sidebar -->
+        <aside class="admin-sidebar">
+            <div class="sidebar-header">
+                <span style="font-size: 1.5rem;">🛍️</span>
+                <span data-i18n="admin_panel">لوحة الإدارة</span>
+            </div>
+
+            <ul class="sidebar-menu">
+                <li>
+                    <a href="admin.html">
+                        <span>📊</span> <span data-i18n="menu_dashboard">لوحة المعلومات</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="products.html">
+                        <span>📦</span> <span data-i18n="menu_products">المنتجات</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="sales.html" class="active">
+                        <span>💰</span> <span data-i18n="menu_sales">المبيعات</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="index.html" target="_blank">
+                        <span>🏪</span> <span data-i18n="menu_store">المتجر</span>
+                    </a>
+                </li>
+            </ul>
+
+            <ul class="sidebar-menu" style="flex: 0; margin-top: auto;">
+                <li>
+                    <a href="#" class="logout-btn" onclick="logout()" style="color: var(--danger-color);">
+                        <span>🚪</span> <span data-i18n="logout">تسجيل الخروج</span>
+                    </a>
+                </li>
+            </ul>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="admin-content">
+            <div class="admin-header">
+                <h2><span data-i18n="sales_management">💰 إدارة المبيعات والطلبات</span></h2>
+                <div class="header-actions">
+                    <!-- Theme Toggle -->
+                    <div class="nav-item-luxury" id="theme-toggle" onclick="toggleTheme()"
+                        style="height: 40px; min-width: 140px;">
+                        <div class="icon-display" id="theme-icon">☀️</div>
+                        <span id="theme-text" data-i18n="light_mode">الوضع النهاري</span>
+                    </div>
+
+                    <!-- Language Toggle -->
+                    <div class="nav-item-luxury" id="lang-toggle" onclick="toggleLanguage()"
+                        style="height: 40px; min-width: 100px;">
+                        <div class="icon-display">🌐</div>
+                        <span id="lang-text" style="font-weight: 700;">EN</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sales Statistics -->
+            <div class="sales-stats-grid">
+                <div class="stat-card stat-card-total">
+                    <div class="stat-card-header">
+                        <div>
+                            <div class="stat-card-label" data-i18n="total_orders">إجمالي الطلبات</div>
+                            <div class="stat-card-value" id="stat-total-orders">0</div>
+                        </div>
+                        <div class="stat-card-icon">📦</div>
+                    </div>
+                </div>
+                <div class="stat-card stat-card-pending">
+                    <div class="stat-card-header">
+                        <div>
+                            <div class="stat-card-label" data-i18n="pending">قيد الانتظار</div>
+                            <div class="stat-card-value" id="stat-pending-orders">0</div>
+                        </div>
+                        <div class="stat-card-icon">⏳</div>
+                    </div>
+                </div>
+                <div class="stat-card stat-card-processing">
+                    <div class="stat-card-header">
+                        <div>
+                            <div class="stat-card-label" data-i18n="processing">قيد المعالجة</div>
+                            <div class="stat-card-value" id="stat-processing-orders">0</div>
+                        </div>
+                        <div class="stat-card-icon">🔄</div>
+                    </div>
+                </div>
+                <div class="stat-card stat-card-completed">
+                    <div class="stat-card-header">
+                        <div>
+                            <div class="stat-card-label" data-i18n="completed">مكتملة</div>
+                            <div class="stat-card-value" id="stat-completed-orders">0</div>
+                        </div>
+                        <div class="stat-card-icon">✅</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Orders Container -->
+            <section id="orders-section">
+                <div class="glass-table-wrapper">
+                    <table id="orders-table">
+                        <thead>
+                            <tr>
+                                <th data-i18n="order_number">رقم الطلب</th>
+                                <th data-i18n="customer">العميل</th>
+                                <th data-i18n="order_date">تاريخ الطلب</th>
+                                <th data-i18n="order_total">إجمالي الطلب</th>
+                                <th data-i18n="order_status">حالة الطلب</th>
+                                <th data-i18n="actions">العمليات</th>
+                            </tr>
+                        </thead>
+                        <tbody id="orders-list">
+                            <!-- Injected by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <div id="orders-container" style="display: none;">
+                <!-- Legacy container hidden as we use the table now -->
+            </div>
+            </section>
+    </div>
+    <div id="admin-loader" class="loader" style="margin-top: 3rem;"></div>
+    </section>
+
+    <!-- Order Details Modal -->
+    <div id="order-modal" class="modal-overlay">
+        <div class="modal-content" style="max-width: 900px;">
+            <div class="modal-header">
+                <h3 class="modal-title" data-i18n="order_details">📋 تفاصيل الطلب</h3>
+                <button class="modal-close" onclick="closeOrderModal()">×</button>
+            </div>
+            <div id="order-details-content" style="max-height: 70vh; overflow-y: auto;">
+                <!-- Order details will be injected here -->
+            </div>
+        </div>
+    </div>
+    </main>
+    </div>
+
+    <div id="toast-container" class="toast-container"></div>
+    <script src="init-demo-data.js"></script>
+    <script src="i18n.js?v=1.1"></script>
+    <script src="admin.js?v=1.1"></script>
+    <script>
+        // Store all orders for filtering
+        let allOrders = [];
+
+        // Override renderOrders function for premium design - TABLE VIEW
+        const originalRenderOrders = window.renderOrders;
+        window.renderOrders = function (orders) {
+            allOrders = orders;
+            const tableBody = document.getElementById('orders-list');
+            if (!tableBody) return;
+
+            const currentLang = document.documentElement.getAttribute('lang') || 'ar';
+            // Use global translation function t()
+
+            if (!orders || orders.length === 0) {
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="6" style="text-align:center; padding: 4rem 2rem;">
+                            <div class="empty-state">
+                                <div class="empty-state-icon">📭</div>
+                                <div class="empty-state-text">${t('noOrders')}</div>
+                                <p style="margin-top: 0.5rem; font-size: 0.9rem;">${t('noOrdersFound')}</p>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            const statusLabels = {
+                pending: t('pending'),
+                processing: t('processing'),
+                completed: t('completed'),
+                cancelled: t('cancelled')
+            };
+
+            const statusClasses = {
+                pending: 'status-pending', // will correspond to specific CSS or generic badge
+                processing: 'status-processing',
+                completed: 'status-completed',
+                cancelled: 'status-cancelled'
+            };
+
+            const statusIcons = {
+                pending: '⏳',
+                processing: '🔄',
+                completed: '✅',
+                cancelled: '❌'
+            };
+
+            tableBody.innerHTML = orders.map(order => `
+                <tr onclick="viewOrderDetails('${order._id}')" style="cursor: pointer;">
+                    <td>
+                        <span style="font-weight: 700; font-family: monospace;">${order.orderNumber}</span>
+                    </td>
+                    <td>
+                        <div style="font-weight: 600;">${order.customerName}</div>
+                        <div style="font-size: 0.8rem; color: var(--text-secondary);">${order.customerEmail}</div>
+                    </td>
+                    <td>
+                        ${new Date(order.orderDate).toLocaleDateString('en-GB')}
+                        <span style="color: var(--text-secondary); font-size: 0.8rem; margin-right: 4px;">${new Date(order.orderDate).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })}</span>
+                    </td>
+                    <td>
+                        <span style="font-weight: 700; color: var(--accent-color);">$${order.total.toFixed(2)}</span>
+                    </td>
+                    <td>
+                        <span class="status-badge ${order.status}">
+                            <span class="status-icon">${statusIcons[order.status]}</span>
+                            ${statusLabels[order.status] || order.status}
+                        </span>
+                    </td>
+                    <td>
+                        <button class="btn-secondary" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;">
+                             👁️ <span style="margin: 0 4px;">${t('details') || 'Details'}</span>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        };
+
+        // Override viewOrderDetails for localization
+        window.viewOrderDetails = function (orderId) {
+            const order = allOrders.find(o => o._id === orderId);
+            if (!order) return;
+
+            const currentLang = document.documentElement.getAttribute('lang') || 'ar';
+
+            // Localized Status Labels
+            const statusLabels = {
+                pending: t('pending'),
+                processing: t('processing'),
+                completed: t('completed'),
+                cancelled: t('cancelled')
+            };
+
+            const content = document.getElementById('order-details-content');
+
+            content.innerHTML = `
+                <div style="padding: 1rem 0;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border-color);">
+                        <div>
+                            <h2 style="font-size: 1.5rem; margin-bottom: 0.5rem; direction: ltr;">${order.orderNumber}</h2>
+                            <p style="color: var(--text-secondary); direction: ltr;">${new Date(order.orderDate).toLocaleDateString('en-GB')} ${new Date(order.orderDate).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })}</p>
+                        </div>
+                        <select onchange="window.updateOrderStatus('${order._id}', this.value)" class="premium-status-select status-${order.status}">
+                            <option value="pending" ${order.status === 'pending' ? 'selected' : ''}>${statusLabels.pending}</option>
+                            <option value="processing" ${order.status === 'processing' ? 'selected' : ''}>${statusLabels.processing}</option>
+                            <option value="completed" ${order.status === 'completed' ? 'selected' : ''}>${statusLabels.completed}</option>
+                            <option value="cancelled" ${order.status === 'cancelled' ? 'selected' : ''}>${statusLabels.cancelled}</option>
+                        </select>
+                    </div>
+
+                    <div style="margin-bottom: 1.5rem;">
+                        <h3 style="margin-bottom: 1rem;">${t('customerInfo')}</h3>
+                        <div style="background: rgba(99, 102, 241, 0.1); padding: 1rem; border-radius: var(--radius-sm);">
+                            <p style="margin-bottom: 0.5rem;"><strong>${t('name')}:</strong> ${order.customerName}</p>
+                            <p style="margin-bottom: 0.5rem;">
+                                <strong>${t('email')}:</strong> 
+                                <a href="mailto:${order.customerEmail}" style="color: var(--accent-color); text-decoration: none; transition: opacity 0.3s;" onmouseover="this.style.opacity='0.7'" onmouseout="this.style.opacity='1'">
+                                    ${order.customerEmail}
+                                </a>
+                            </p>
+                            <p style="margin-bottom: 0.5rem;">
+                                <strong>${t('phone')}:</strong> 
+                                <a href="https://wa.me/${order.customerPhone.replace(/\+| /g, '')}" target="_blank" style="color: #25D366; text-decoration: none; transition: opacity 0.3s; direction: ltr; unicode-bidi: embed;" onmouseover="this.style.opacity='0.7'" onmouseout="this.style.opacity='1'">
+                                    ${order.customerPhone} 📱
+                                </a>
+                            </p>
+                            <p style="margin-bottom: 0.5rem;"><strong>${t('zip')}:</strong> ${order.postalCode || 'N/A'}</p>
+                            <p><strong>${t('address')}:</strong> ${order.shippingAddress}</p>
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom: 1.5rem;">
+                        <h3 style="margin-bottom: 1rem;">${t('cart_items')}</h3>
+                        ${order.items.map(item => `
+                            <div style="display: flex; gap: 1rem; padding: 1rem; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: var(--radius-sm); margin-bottom: 0.75rem;">
+                                <img src="${item.image}" alt="${item.productName}" style="width: 80px; height: 80px; object-fit: cover; border-radius: var(--radius-sm);">
+                                <div style="flex: 1;">
+                                    <h4 style="margin-bottom: 0.5rem;">${item.productName}</h4>
+                                    <p style="color: var(--text-secondary); font-size: 0.9rem;">${t('quantity')}: ${item.quantity}</p>
+                                </div>
+                                <div style="text-align: left;">
+                                    <p style="font-weight: 700; color: var(--accent-color);">$${(item.price * item.quantity).toFixed(2)}</p>
+                                    <p style="color: var(--text-secondary); font-size: 0.85rem;">$${item.price.toFixed(2)} × ${item.quantity}</p>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+
+                    <div style="background: rgba(99, 102, 241, 0.05); padding: 1rem; border-radius: var(--radius-sm);">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                            <span>${t('subtotal')}:</span>
+                            <span>$${order.subtotal.toFixed(2)}</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                            <span>${t('shipping')}:</span>
+                            <span>${order.shipping === 0 ? t('freeShipping') : '$' + order.shipping.toFixed(2)}</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; padding-top: 0.5rem; border-top: 1px solid var(--border-color); font-size: 1.2rem; font-weight: 700;">
+                            <span>${t('total')}:</span>
+                            <span style="color: var(--accent-color);">$${order.total.toFixed(2)}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            const modal = document.getElementById('order-modal');
+
+            // Translate modal title and close button dynamically if possible, or assume static
+            const modalTitle = modal.querySelector('.modal-title');
+            if (modalTitle) modalTitle.textContent = currentLang === 'ar' ? '📋 تفاصيل الطلب' : '📋 Order Details';
+
+            if (modal) modal.classList.add('active');
+        };
+
+        // Search functionality
+        function searchOrders() {
+            const searchTerm = document.getElementById('search-orders').value.toLowerCase();
+            const statusFilter = document.getElementById('status-filter').value;
+
+            let filtered = allOrders;
+
+            // Apply status filter
+            if (statusFilter !== 'all') {
+                filtered = filtered.filter(o => o.status === statusFilter);
+            }
+
+            // Apply search filter
+            if (searchTerm) {
+                filtered = filtered.filter(o =>
+                    o.orderNumber.toLowerCase().includes(searchTerm) ||
+                    o.customerName.toLowerCase().includes(searchTerm) ||
+                    o.customerEmail.toLowerCase().includes(searchTerm) ||
+                    o.customerPhone.includes(searchTerm) ||
+                    (o.postalCode && o.postalCode.includes(searchTerm)) ||
+                    o.items.some(item => item.productName.toLowerCase().includes(searchTerm))
+                );
+            }
+
+            renderOrders(filtered);
+        }
+
+        // Export to CSV
+        function exportOrders() {
+            if (allOrders.length === 0) {
+                showToast(t('no_orders_to_export'), 'error');
+                return;
+            }
+
+            const headers = [t('export_order_number'), t('export_customer_name'), t('export_email'), t('export_phone'), t('export_postal'), t('export_total'), t('export_status'), t('export_date'), t('export_address')];
+            const rows = allOrders.map(order => [
+                order.orderNumber,
+                order.customerName,
+                order.customerEmail,
+                order.customerPhone,
+                order.postalCode || '',
+                order.total.toFixed(2),
+                order.status,
+                new Date(order.orderDate).toLocaleDateString('en-GB'),
+                order.shippingAddress
+            ]);
+
+            let csvContent = '\uFEFF'; // UTF-8 BOM for Excel
+            csvContent += headers.join(',') + '\n';
+            csvContent += rows.map(row => row.map(cell => `"${cell}"`).join(',')).join('\n');
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', `orders_${new Date().toISOString().split('T')[0]}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            showToast(t('orders_exported'), 'success');
+        }
+
+        // Theme Toggle - handled by admin.js window.toggleTheme
+
+        // Language Toggle
+
+        // Ensure our overrides are set up and then fetch orders
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('📊 Sales page initializing overrides...');
+
+            // Our overrides are already defined above
+            // Now explicitly call fetchOrders to populate with our custom render
+            if (typeof fetchOrders === 'function') {
+                console.log('📊 Calling fetchOrders from sales.html...');
+                fetchOrders();
+            } else {
+                console.error('❌ fetchOrders function not available!');
+            }
+        });
+    </script>
+</body>
+
+</html>

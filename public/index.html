@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="google" content="notranslate">
+    <meta name="description" content="Navito - Your Premium E-commerce Destination">
+    <title data-i18n="home">الرئيسية | Navito</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="modal-styles.css">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&family=Outfit:wght@300;400;600;700&family=Montserrat:wght@300;400;700&family=Playfair+Display:wght@700;900&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="icon"
+        href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🛍️</text></svg>">
+    <!-- Theme & Language Persistence Script - Prevents Flash -->
+    <script>
+        (function () {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            document.documentElement.className = savedTheme + '-mode';
+
+            const savedLang = localStorage.getItem('navito_language') || 'ar';
+            document.documentElement.lang = savedLang;
+
+            if (savedLang === 'en') {
+                document.write('<style id="i18n-hide-body">body { opacity: 0 !important; }</style>');
+                setTimeout(function () {
+                    document.documentElement.classList.add('i18n-ready');
+                }, 1500);
+            } else {
+                document.documentElement.classList.add('i18n-ready');
+            }
+        })();
+    </script>
+</head>
+
+<body>
+
+    <!-- Top Bar -->
+    <div class="top-bar">
+        <div class="container top-bar-container">
+            <div class="top-bar-left">
+                <span id="welcome-text-guest" data-i18n="welcome_back">مرحباً بكم في Navito</span>
+                <span id="welcome-text-user" style="display: none;"></span>
+            </div>
+            <div class="top-bar-right">
+                <div class="country-switcher" id="country-toggle-top" style="display: inline-flex; align-items: center; gap: 8px; cursor: pointer; margin-inline-end: 15px; font-weight: 600;">
+                    <i class="fas fa-map-marker-alt" style="font-size: 0.9rem; color: var(--luxury-gold);"></i>
+                    <span id="country-text">السعودية 🇸🇦</span>
+                </div>
+                <a href="#" class="top-bar-link"><span data-i18n="download_app">تحميل التطبيق</span></a>
+                <a href="#" class="top-bar-link"><span data-i18n="help">المساعدة</span></a>
+            </div>
+        </div>
+    </div>
+
+    <div class="announcement-bar">
+        <div class="ticker-wrapper">
+            <div class="ticker-track">
+                <span class="ticker-item"><i class="fas fa-truck"></i> <span data-i18n="free_delivery_today">شحن مجاني
+                        للطلبات لهذا اليوم فقط! 🚚</span></span>
+                <span class="ticker-sep">✦</span>
+                <span class="ticker-item"><i class="fas fa-fire"></i> <span data-i18n="limited_offer">عرض لفترة محدودة —
+                        اطلب الآن! 🔥</span></span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Promotional Marquee (Bonus Feature) -->
+    <div class="promo-marquee-container">
+        <div class="promo-marquee">
+            <span data-i18n="marquee_msg">شحن مجاني للطلبات فوق 200 ريال • منتجات أصلية 100% • عروض حصرية لفترة محدودة</span>
+            <span data-i18n="marquee_msg">شحن مجاني للطلبات فوق 200 ريال • منتجات أصلية 100% • عروض حصرية لفترة محدودة</span>
+        </div>
+    </div>
+    <!-- Header -->
+    <header>
+        <div class="mobile-menu-toggle">
+
+            <i class="fas fa-bars"></i>
+        </div>
+        <div class="logo">
+            <a href="index.html">
+                <h1>NAVITO</h1>
+            </a>
+        </div>
+
+        <div class="search-wrapper-premium">
+            <input type="text" id="main-search-input" class="search-input-premium" data-i18n="search_products"
+                placeholder="ابحث عن منتجات...">
+            <button id="main-search-btn" class="search-btn-premium">
+                <i class="fas fa-search" style="margin-left: 8px;"></i>
+                <span data-i18n="search">بحث</span>
+            </button>
+        </div>
+
+        <div class="header-actions">
+            <!-- Language Toggle -->
+            <div class="nav-item-luxury" id="lang-toggle-nav">
+
+                <div class="icon-display">🌐</div>
+                <span id="lang-text" style="font-weight: 700;">EN</span>
+            </div>
+
+            <!-- Account Button (Desktop) -->
+            <div class="nav-item-luxury" id="desktop-account-nav" onclick="handleAccountClick()" style="cursor: pointer;">
+                <div class="icon-display"><i class="fas fa-user-circle"></i></div>
+                <span id="desktop-account-text" data-i18n="account">حسابي</span>
+            </div>
+
+            <!-- Theme Toggle -->
+            <div class="nav-item-luxury" id="theme-toggle-nav">
+
+                <div class="icon-display" id="theme-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                        width="20" height="20">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                    </svg>
+                </div>
+                <span id="theme-text" data-i18n="dark_mode">الوضع الليلي</span>
+            </div>
+
+        </div>
+    </header>
+
+    <main>
+        <!-- Hero Section -->
+        <section class="hero">
+            <div class="social-proof-float">
+                <i class="fas fa-eye"></i> <span data-i18n="social_proof_watching">24 شخص يشاهدون المنتج الآن</span>
+            </div>
+            <div class="container glass-hero">
+                <span class="hero-label" data-i18n="limited_offer" style="color: var(--luxury-gold);"></span>
+                <h1 class="hero-title" data-i18n="hero_title"></h1>
+                <p class="hero-subtitle" data-i18n="hero_subtitle"></p>
+                <div class="hero-actions">
+                    <button class="btn-primary-luxury" data-i18n="shop_now"
+                        onclick="document.getElementById('shop-section').scrollIntoView({ behavior: 'smooth' })">
+                        تسوق الآن
+                    </button>
+                    <button class="btn-secondary-luxury" data-i18n="discover_products"
+                        onclick="document.getElementById('shop-section').scrollIntoView({ behavior: 'smooth' })">
+                        اكتشف المنتجات
+                    </button>
+                </div>
+
+                <!-- Hero Countdown -->
+                <div class="hero-countdown-wrapper">
+                    <span data-i18n="offer_ends_in">العرض ينتهي خلال:</span>
+                    <div id="countdown" class="countdown-timer">
+                        <div class="timer-segment"><span id="hours">02</span><label>H</label></div>
+                        <div class="timer-segment"><span id="minutes">14</span><label>M</label></div>
+                        <div class="timer-segment"><span id="seconds">32</span><label>S</label></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="container" id="shop-section">
+            <h3 class="section-title" data-i18n="best_sellers">
+                الأكثر مبيعاً</h3>
+
+            <!-- Category Pills -->
+            <div class="category-pills-wrapper">
+                <div class="category-pill active" onclick="filterByCategory('الكل')" data-i18n="category_all">الكل</div>
+                <div class="category-pill" onclick="filterByCategory('مكياج')" data-i18n="category_makeup">مكياج</div>
+                <div class="category-pill" onclick="filterByCategory('عناية بالبشرة')" data-i18n="category_skincare">عناية بالبشرة</div>
+                <div class="category-pill" onclick="filterByCategory('عطور')" data-i18n="category_perfumes">عطور</div>
+                <div class="category-pill" onclick="filterByCategory('العناية بالشعر')" data-i18n="category_haircare">عناية بالشعر</div>
+                <div class="category-pill" onclick="filterByCategory('أدوات المكياج')" data-i18n="category_makeup_tools">أدوات مكياج</div>
+            </div>
+
+            <!-- Products Grid -->
+            <div class="products-grid" id="products-grid">
+                <!-- Products will be injected here by app.js -->
+            </div>
+            
+            <!-- Trust & Reviews Section -->
+            <section class="reviews-section">
+                <div class="container">
+                    <h2 class="section-title" data-i18n="reviews_title">تقييمات عملائنا</h2>
+                    <div class="reviews-grid">
+                        <div class="review-card">
+                            <div class="review-header">
+                                <div class="stars">⭐⭐⭐⭐⭐</div>
+                                <span class="review-date">منذ يومين</span>
+                            </div>
+                            <p class="review-text">"منتج رائع جداً، الجودة مذهلة وسرعة التوصيل خيالية. أنصح به بشدة!"
+                            </p>
+                            <div class="review-user">
+                                <img src="https://ui-avatars.com/api/?name=Sara+A&background=random" alt="User">
+                                <div class="user-info">
+                                    <strong>سارة أحمد</strong>
+                                    <span>اشترى المنتج ✅</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="review-card">
+                            <div class="review-header">
+                                <div class="stars">⭐⭐⭐⭐⭐</div>
+                                <span class="review-date">منذ أسبوع</span>
+                            </div>
+                            <p class="review-text">"التغليف فاخر جداً والمنتج أصلي 100%. شكراً نافيتو على المصداقية."
+                            </p>
+                            <div class="review-user">
+                                <img src="https://ui-avatars.com/api/?name=Nora+K&background=random" alt="User">
+                                <div class="user-info">
+                                    <strong>نورة القحطاني</strong>
+                                    <span>اشترى المنتج ✅</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="review-card">
+                            <div class="review-header">
+                                <div class="stars">⭐⭐⭐⭐⭐</div>
+                                <span class="review-date">منذ شهر</span>
+                            </div>
+                            <p class="review-text">"أفضل متجر تعاملت معه في السعودية. خدمة العملاء سريعة والمنتجات ولا
+                                غلطة."
+                            </p>
+                            <div class="review-user">
+                                <img src="https://ui-avatars.com/api/?name=Mohamed+S&background=random" alt="User">
+                                <div class="user-info">
+                                    <strong>محمد سلطان</strong>
+                                    <span>اشترى المنتج ✅</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Improved Why Choose Us -->
+            <section class="why-choose-us">
+                <div class="container grid-4">
+                    <div class="trust-item">
+                        <div class="trust-icon"><i class="fas fa-certificate"></i></div>
+                        <h4 data-i18n="original_products">منتجات أصلية</h4>
+                        <p data-i18n="original_products_desc">جميع منتجاتنا أصلية 100%</p>
+                    </div>
+                    <div class="trust-item">
+                        <div class="trust-icon"><i class="fas fa-truck-loading"></i></div>
+                        <h4 data-i18n="fast_delivery">توصيل سريع</h4>
+                        <p data-i18n="fast_delivery_desc">توصيل لباب المنزل في 24-48 ساعة</p>
+                    </div>
+                    <div class="trust-item">
+                        <div class="trust-icon"><i class="fas fa-undo-alt"></i></div>
+                        <h4 data-i18n="return_policy">ضمان استرجاع</h4>
+                        <p data-i18n="return_policy_desc">سياسة استبدال واسترجاع سهلة</p>
+                    </div>
+                    <div class="trust-item">
+                        <div class="trust-icon"><i class="fas fa-headset"></i></div>
+                        <h4 data-i18n="support_24">دعم متواصل</h4>
+                        <p data-i18n="support_24_desc">دعم فني عبر الواتساب على مدار الساعة</p>
+                    </div>
+                </div>
+            </section>
+    </main>
+
+    <!-- Cart Sidebar -->
+    <div class="cart-overlay" id="cart-overlay" onclick="window.toggleCart()"></div>
+
+    <div class="cart-sidebar" id="cart-sidebar">
+        <div class="cart-header">
+            <h3 data-i18n="shopping_cart">سلة المشتريات</h3>
+            <div class="cart-header-actions">
+                <span class="close-label" data-i18n="close" onclick="window.toggleCart()" ontouchstart="window.toggleCart()">إغلاق</span>
+                <button class="close-cart" onclick="window.toggleCart()" ontouchstart="window.toggleCart()">×</button>
+            </div>
+
+        </div>
+
+
+        <div class="cart-items" id="cart-items">
+            <!-- Free Shipping Progress -->
+            <div class="free-shipping-progress" id="free-shipping-progress-container">
+                <span class="progress-text" data-i18n="shipping_calculating">جاري حساب الشحن...</span>
+                <div class="progress-bar-bg">
+                    <div class="progress-bar-fill"></div>
+                </div>
+            </div>
+            <!-- Cart items will be injected here -->
+        </div>
+        <div class="cart-footer">
+            <div class="cart-total-row">
+                <span data-i18n="total">الإجمالي</span>
+                <span id="cart-total">0.00</span>
+            </div>
+            <button class="btn-primary" style="width: 100%; margin-bottom: 0.8rem;" onclick="window.startCartCheckout()"
+                data-i18n="checkout">إتمام الطلب</button>
+            <button class="btn-secondary mobile-only-close" style="width: 100%;" onclick="window.toggleCart(true)" ontouchstart="window.toggleCart(true)"
+                data-i18n="continue_shopping">مواصلة التسوق</button>
+        </div>
+
+    </div>
+
+    <!-- Product Modal -->
+    <div class="product-modal-overlay" id="product-modal">
+        <div class="product-modal">
+            <button class="modal-close" onclick="closeProductModal()">×</button>
+            <div class="modal-grid">
+                <div class="modal-images">
+                    <div class="main-image-wrapper">
+                        <img id="modal-main-image" src="" alt="">
+                    </div>
+                    <div class="thumbnails" id="modal-thumbnails">
+                        <!-- Thumbnails injected here -->
+                    </div>
+                </div>
+                <div class="modal-info">
+                    <h2 id="modal-product-name">اسم المنتج</h2>
+                    <div class="modal-meta">
+                        <div class="modal-rating" id="modal-rating">
+                            <!-- Stars injected here -->
+                        </div>
+                        <span class="modal-reviews" id="modal-reviews" data-i18n="reviews"></span>
+                    </div>
+                    <div class="modal-price" id="modal-price" data-i18n="price">0.00</div>
+                    <div class="modal-stock" id="modal-stock" data-i18n="in_stock">في المخزون</div>
+
+                    <div class="modal-section">
+                        <h4 data-i18n="product_description">وصف المنتج</h4>
+                        <p id="modal-description"></p>
+                    </div>
+
+                    <div class="modal-section">
+                        <h4 data-i18n="product_features">المميزات</h4>
+                        <ul id="modal-features">
+                            <!-- Features injected here -->
+                        </ul>
+                    </div>
+
+                    <!-- Bundle Offers -->
+                    <div class="modal-section bundle-offers">
+                        <h4 style="color: var(--luxury-gold);"><i class="fas fa-gift"></i> عروض توفير حصرية</h4>
+                        <div class="bundle-options">
+                            <label class="bundle-option active">
+                                <input type="radio" name="bundle" value="1" checked onchange="updateBundlePrice(1)">
+                                <div class="bundle-info">
+                                    <span data-i18n="bundle_1">قطعة واحدة</span>
+                                    <strong class="bundle-price-val" id="bundle-1-price"></strong>
+                                </div>
+                            </label>
+                            <label class="bundle-option">
+                                <input type="radio" name="bundle" value="2" onchange="updateBundlePrice(2)">
+                                <div class="bundle-info">
+                                    <span data-i18n="bundle_2">قطعتان - خصم إضافي</span>
+                                    <strong class="bundle-price-val" id="bundle-2-price"></strong>
+                                    <span class="bundle-badge">وفر 10%</span>
+                                </div>
+                            </label>
+                            <label class="bundle-option">
+                                <input type="radio" name="bundle" value="3" onchange="updateBundlePrice(3)">
+                                <div class="bundle-info">
+                                    <span data-i18n="bundle_3">3 قطع - أفضل قيمة</span>
+                                    <strong class="bundle-price-val" id="bundle-3-price"></strong>
+                                    <span class="bundle-badge best">وفر 20%</span>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="modal-actions" style="display: flex; gap: 1rem; margin-top: 2rem;">
+                        <button class="btn-primary" id="modal-buy-now" onclick="buyNow(window.currentProductId)"
+                            style="flex: 2;">
+                            <span data-i18n="buy_now">شراء الآن</span>
+                        </button>
+                        <button class="btn-secondary" id="modal-add-cart" onclick="addToCartFromModal()"
+                            style="flex: 1;">
+                            <span data-i18n="add_to_cart">إضافة للسلة</span>
+                        </button>
+                        <!-- Added Bottom Close Button for UX -->
+                        <button class="btn-close-bottom" onclick="closeProductModal()">
+                            <span data-i18n="close">إغلاق</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Removed old Services Bar (Redundant with Why Choose Us) -->
+
+    <!-- Professional Footer -->
+    <footer class="main-footer">
+        <div class="container footer-grid">
+            <div class="footer-col">
+                <h1 style="font-family: 'Outfit', sans-serif; font-size: 2rem; margin-bottom: 1.5rem;">NAVITO</h1>
+                <p data-i18n="platform_description">منصتكم الرائدة لتجربة تسوق فريدة ومتميزة في عالم الجمال.</p>
+                <div style="margin-top: 2rem; display: flex; gap: 1rem; font-size: 1.2rem;">
+                    <a href="#"><i class="fab fa-instagram"></i></a>
+                    <a href="#"><i class="fab fa-facebook"></i></a>
+                    <a href="#"><i class="fab fa-twitter"></i></a>
+                    <a href="#"><i class="fab fa-snapchat-ghost"></i></a>
+                </div>
+            </div>
+            <div class="footer-col">
+                <h3 data-i18n="quick_links">روابط سريعة</h3>
+                <ul>
+                    <li><a href="#" data-i18n="home">الرئيسية</a></li>
+                    <li><a href="#" data-i18n="makeup">مكياج</a></li>
+                    <li><a href="#" data-i18n="skincare">عناية بالبشرة</a></li>
+                    <li><a href="#" data-i18n="perfumes">عطور</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h3 data-i18n="customer_service">خدمة العملاء</h3>
+                <ul>
+                    <li><a href="#" data-i18n="about_us">من نحن</a></li>
+                    <li><a href="#" data-i18n="contact_us">تواصل معنا</a></li>
+                    <li><a href="#" data-i18n="faq">الأسئلة الشائعة</a></li>
+                    <li><a href="track-order.html" data-i18n="track_order_btn">تتبع طلبك</a></li>
+                    <li><a href="#" data-i18n="shipping_policy">سياسة الشحن</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h3 data-i18n="contact_info">اتصل بنا</h3>
+                <ul style="opacity: 0.8;">
+                    <li data-i18n="footer_address">📍 المملكة العربية السعودية، الرياض</li>
+                    <li data-i18n="footer_email">📧 info@navito.com</li>
+                    <li data-i18n="footer_phone">📞 +966 50 000 0000</li>
+                </ul>
+            </div>
+        </div>
+        <div class="container footer-bottom">
+            <p data-i18n="copyright">حقوق النشر © 2024 NAVITO. جميع الحقوق محفوظة.</p>
+        </div>
+    </footer>
+
+    <!-- Account Information Modal -->
+    <div id="account-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title" data-i18n="account_info">👤 معلومات الحساب</h2>
+                <button class="modal-close" onclick="closeAccountModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="account-info-card">
+                    <div class="info-item">
+                        <label class="info-label" data-i18n="full_name">الاسم الكامل</label>
+                        <div id="account-name" class="info-value">-</div>
+                    </div>
+                    <div class="info-item">
+                        <label class="info-label" data-i18n="email">البريد الإلكتروني</label>
+                        <div id="account-email" class="info-value">-</div>
+                    </div>
+                    <div class="info-item">
+                        <label class="info-label" data-i18n="phone">رقم الهاتف</label>
+                        <div id="account-phone" class="info-value">-</div>
+                    </div>
+                </div>
+                <button class="btn-logout-luxury" onclick="handleLogout()" data-i18n="logout">تسجيل الخروج</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- WhatsApp Floating Button -->
+    <a href="https://wa.me/966500000000" class="whatsapp-float" target="_blank">
+        <i class="fab fa-whatsapp"></i>
+        <span class="whatsapp-tooltip">تحدث معنا!</span>
+    </a>
+
+    <!-- Mobile Bottom Navigation (Premium App Experience) -->
+    <!-- Mobile Side Drawer -->
+    <div id="mobile-drawer" class="mobile-drawer">
+        <div class="drawer-header">
+            <h3>Navito</h3>
+            <button class="drawer-close" onclick="toggleMobileMenu()">×</button>
+        </div>
+        <div class="drawer-content">
+            <div class="drawer-section">
+                <span data-i18n="language_selection">اللغة / Language</span>
+                <button class="drawer-btn" onclick="toggleLanguage(); toggleMobileMenu();">
+                    <i class="fas fa-globe"></i>
+                    <span id="drawer-lang-text">English</span>
+                </button>
+            </div>
+            <div class="drawer-section">
+                <span data-i18n="country_selection">الدولة / Country</span>
+                <button class="drawer-btn" onclick="toggleCountry(); toggleMobileMenu();">
+                    <i class="fas fa-map-marker-alt"></i>
+                    <span id="drawer-country-text">السعودية 🇸🇦</span>
+                </button>
+            </div>
+        </div>
+        <div class="drawer-footer">
+            <p data-i18n="copyright">حقوق النشر © 2024 NAVITO</p>
+        </div>
+    </div>
+    <div id="drawer-overlay" class="drawer-overlay" onclick="toggleMobileMenu()"></div>
+
+    <nav class="mobile-nav-bar">
+        <a href="index.html" class="nav-item active">
+            <i class="fas fa-home"></i>
+            <span data-i18n="home">الرئيسية</span>
+        </a>
+        <a href="#shop-section" class="nav-item">
+            <i class="fas fa-th-large"></i>
+            <span data-i18n="shop">المتجر</span>
+        </a>
+        <a href="javascript:void(0)" class="nav-item" onclick="window.toggleCart()">
+
+            <div class="nav-badge-wrapper">
+                <i class="fas fa-shopping-bag"></i>
+                <span id="mobile-cart-badge" class="nav-badge">0</span>
+            </div>
+            <span data-i18n="shopping_cart">السلة</span>
+        </a>
+        <a href="javascript:void(0)" class="nav-item" id="mobile-account-btn" onclick="handleAccountClick()">
+            <i class="fas fa-user"></i>
+            <span data-i18n="account">حسابي</span>
+        </a>
+    </nav>
+
+    <!-- Discount Popup -->
+    <div id="discount-popup" class="discount-popup-overlay">
+        <div class="discount-popup">
+            <button class="popup-close" onclick="closePopup()">×</button>
+            <div class="popup-content">
+                <div class="popup-icon-luxury">🎁</div>
+                <h2 data-i18n="discount_popup_title">احصل على خصم 10% خصيصاً لك!</h2>
+                <div class="popup-line"></div>
+                <p data-i18n="discount_popup_desc">اشترك اليوم لتصلك أفضل العروض والخصومات الحصرية.</p>
+                <div class="popup-input-group-luxury">
+                    <input type="email" data-i18n="email" placeholder="البريد الإلكتروني">
+                    <button class="btn-primary-luxury" data-i18n="subscribe_btn">احصل على الخصم</button>
+                </div>
+                <button class="btn-text-luxury" onclick="closePopup()" data-i18n="no_thanks">لا شكراً، أريد التسوق
+                    فقط</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="utils.js"></script>
+    <script src="i18n.js?v=1.1"></script>
+    <script src="product-data.js?v=1.1"></script>
+    <script src="modal-functions.js?v=1.1"></script>
+    <script src="cart-manager.js?v=1.0"></script>
+    <script src="app.js?v=2.0"></script>
+
+    <script src="add-sample-products.js?v=1.1"></script>
+
+    <!-- Elite Scripts: Animations, Social Proof, Micro-interactions -->
+    <script>
+        // Hero Countdown Timer
+        function startCountdown(duration) {
+            let timer = duration;
+            setInterval(function () {
+                const h = Math.floor(timer / 3600);
+                const m = Math.floor((timer % 3600) / 60);
+                const s = timer % 60;
+                const hoursEl = document.getElementById('hours');
+                const minutesEl = document.getElementById('minutes');
+                const secondsEl = document.getElementById('seconds');
+                if (hoursEl) hoursEl.textContent = h < 10 ? "0" + h : h;
+                if (minutesEl) minutesEl.textContent = m < 10 ? "0" + m : m;
+                if (secondsEl) secondsEl.textContent = s < 10 ? "0" + s : s;
+                if (--timer < 0) timer = duration;
+            }, 1000);
+        }
+
+        // Discount Popup
+        function closePopup() {
+            const popup = document.getElementById('discount-popup');
+            if (popup) {
+                popup.style.animation = 'fadeOut 0.3s ease forwards';
+                setTimeout(() => popup.style.display = 'none', 300);
+            }
+            localStorage.setItem('popup_closed', 'true');
+        }
+
+        // Scroll-triggered section animations
+        function initScrollAnimations() {
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.style.opacity = '1';
+                        entry.target.style.transform = 'translateY(0)';
+                        observer.unobserve(entry.target);
+                    }
+                });
+            }, { threshold: 0.1 });
+
+            document.querySelectorAll('.trust-item, .review-card, .store-product-card').forEach(el => {
+                el.style.opacity = '0';
+                el.style.transform = 'translateY(30px)';
+                el.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+                observer.observe(el);
+            });
+        }
+
+        // Live social proof counter (randomise every 10-20s)
+        function initSocialProof() {
+            const el = document.querySelector('.social-proof-float span');
+            if (!el) return;
+            const update = () => {
+                const count = Math.floor(Math.random() * 30) + 10;
+                const lang = localStorage.getItem('navito_language') || 'ar';
+                const coloredCount = `<span style="color: #ff4d4d; font-weight: 800;">${count}</span>`;
+                el.innerHTML = lang === 'en'
+                    ? `${coloredCount} people are watching this now`
+                    : `${coloredCount} شخص يشاهدون المنتج الآن`;
+            };
+            update();
+            setInterval(update, 12000);
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            startCountdown(8 * 3600 + 14 * 60 + 32);
+
+            if (!localStorage.getItem('popup_closed')) {
+                setTimeout(() => {
+                    const popup = document.getElementById('discount-popup');
+                    if (popup) popup.classList.add('active');
+                }, 5000);
+            }
+
+            initScrollAnimations();
+            initSocialProof();
+
+            // Sync mobile cart badge on load
+            const syncMobileBadge = () => {
+                const cart = JSON.parse(localStorage.getItem('navito_cart') || '[]');
+                const count = cart.reduce((sum, i) => sum + (i.quantity || 1), 0);
+                const badge = document.getElementById('mobile-cart-badge');
+                if (badge) {
+                    badge.textContent = count;
+                    badge.style.display = count > 0 ? 'flex' : 'none';
+                }
+            };
+            syncMobileBadge();
+            window.addEventListener('storage', syncMobileBadge);
+        });
+
+        // Keyboard shortcut: press 'C' to open cart
+        window.addEventListener('keydown', e => {
+            if (e.key === 'c' && !e.ctrlKey && !e.metaKey && document.activeElement.tagName !== 'INPUT') {
+                if (typeof toggleCart === 'function') toggleCart();
+            }
+        });
+    </script>
+</body>
+
+</html>

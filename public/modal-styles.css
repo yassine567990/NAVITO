@@ -1,0 +1,358 @@
+/* Luxury Product Modal Styles - REFACTORED FOR CONSISTENCY */
+
+/* The Overlay (#product-modal in HTML) */
+.product-modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(8px);
+    z-index: 10000;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+}
+
+.product-modal-overlay.active {
+    display: flex;
+    opacity: 1;
+}
+
+/* The Inner Box (.product-modal in HTML) */
+.product-modal {
+    background: var(--card-bg);
+    width: 92%;
+    max-width: 1100px;
+    max-height: 90vh;
+    border-radius: 32px;
+    position: relative;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    overflow-y: auto;
+    padding: 3rem;
+    transform: scale(0.9) translateY(20px);
+    transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+    border: 1px solid var(--border-color);
+}
+
+.product-modal-overlay.active .product-modal {
+    transform: scale(1) translateY(0);
+}
+
+/* Close Button - FIXED to the screen so it's always accessible */
+.modal-close {
+    position: fixed;
+    top: 2rem;
+    right: 2rem;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: #FF4B2B !important;
+    /* Prominent red back */
+    border: 2px solid white;
+    color: white !important;
+    font-size: 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 10002;
+    /* Higher than everything */
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    padding-bottom: 4px;
+    box-shadow: 0 10px 20px rgba(255, 75, 43, 0.4);
+}
+
+.modal-close:hover {
+    transform: rotate(90deg) scale(1.1);
+    background: #e03a1e !important;
+}
+
+/* Secondary Close Button for the bottom actions row */
+.btn-close-bottom {
+    flex: 1;
+    background: #f3f4f6;
+    border: 1px solid #d1d5db;
+    border-radius: 12px;
+    padding: 0.8rem;
+    font-weight: 700;
+    cursor: pointer;
+    color: #374151;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.btn-close-bottom:hover {
+    background: #e5e7eb;
+    border-color: #9ca3af;
+}
+
+[dir="rtl"] .btn-close-bottom {
+    font-family: 'Cairo', sans-serif;
+}
+
+/* Grid Layout */
+.modal-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 3.5rem;
+}
+
+/* Image Gallery Section */
+.modal-images {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.main-image-wrapper {
+    width: 100%;
+    aspect-ratio: 1;
+    background: #fff;
+    border-radius: 20px;
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.main-image-wrapper img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    transition: transform 0.6s cubic-bezier(0.165, 0.84, 0.44, 1);
+}
+
+.main-image-wrapper:hover img {
+    transform: scale(1.08);
+}
+
+.thumbnails {
+    display: flex;
+    gap: 1rem;
+    overflow-x: auto;
+    padding-bottom: 0.5rem;
+}
+
+.thumbnail {
+    width: 80px;
+    height: 80px;
+    border-radius: 12px;
+    overflow: hidden;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: all 0.3s ease;
+    flex-shrink: 0;
+    background: #fff;
+}
+
+.thumbnail img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.thumbnail.active {
+    border-color: var(--luxury-gold);
+    transform: scale(0.95);
+}
+
+/* Info Section */
+.modal-info {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.modal-info h2 {
+    font-size: 2.2rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    line-height: 1.2;
+}
+
+.modal-meta {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.modal-rating {
+    color: #FBBF24;
+    font-size: 1.1rem;
+}
+
+.modal-reviews {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.modal-price {
+    font-size: 2.8rem;
+    font-weight: 900;
+    color: var(--luxury-gold);
+}
+
+.modal-stock {
+    font-weight: 700;
+    color: #10B981;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.95rem;
+}
+
+.modal-section {
+    border-top: 1px solid var(--border-color);
+    padding-top: 1.25rem;
+}
+
+.modal-section h4 {
+    font-size: 1.1rem;
+    font-weight: 800;
+    margin-bottom: 0.75rem;
+    color: var(--text-primary);
+}
+
+.modal-section p {
+    color: var(--text-secondary);
+    line-height: 1.7;
+    font-size: 1rem;
+}
+
+.modal-section ul {
+    list-style: none;
+    padding: 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+}
+
+.modal-section li {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.modal-section li::before {
+    content: "•";
+    color: var(--luxury-gold);
+    font-weight: 900;
+}
+
+/* Mobile Responsive */
+@media (max-width: 850px) {
+    .product-modal {
+        padding: 2rem 1.5rem;
+        margin: 10px;
+        width: 100%;
+        max-height: 95vh;
+        border-radius: 24px;
+    }
+
+    .modal-grid {
+        grid-template-columns: 1fr;
+        gap: 2rem;
+    }
+
+    .modal-info h2 {
+        font-size: 1.6rem;
+    }
+
+    .modal-price {
+        font-size: 2.2rem;
+    }
+
+    .modal-section ul {
+        grid-template-columns: 1fr;
+    }
+
+    .modal-close {
+        top: 1rem;
+        right: 1rem;
+        width: 36px;
+        height: 36px;
+        font-size: 1.4rem;
+    }
+}
+/* --- Bundle Offers Logic --- */
+.bundle-offers {
+    background: rgba(201, 162, 39, 0.05);
+    padding: 1.5rem !important;
+    border-radius: 20px;
+    border: 1px dashed var(--luxury-gold) !important;
+}
+
+.bundle-options {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-top: 1rem;
+}
+
+.bundle-option {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 1rem;
+    background: var(--card-bg);
+    border: 2px solid var(--border-color);
+    border-radius: 15px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.bundle-option:hover {
+    border-color: var(--luxury-gold);
+}
+
+.bundle-option.active {
+    border-color: var(--luxury-gold);
+    background: rgba(201, 162, 39, 0.08);
+}
+
+.bundle-option input {
+    width: 20px;
+    height: 20px;
+    accent-color: var(--luxury-gold);
+}
+
+.bundle-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+}
+
+.bundle-price-val {
+    font-size: 1.1rem;
+    color: var(--text-primary);
+}
+
+.bundle-badge {
+    position: absolute;
+    top: -10px;
+    right: 15px;
+    background: #e03a1e;
+    color: white;
+    font-size: 0.7rem;
+    padding: 2px 8px;
+    border-radius: 50px;
+    font-weight: 800;
+}
+
+.bundle-badge.best {
+    background: var(--success-color);
+}
+

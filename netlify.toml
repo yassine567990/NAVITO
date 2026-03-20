@@ -1,0 +1,5 @@
+[build]
+  publish = "public"
+
+# Optional: Pretty URLs support defaults often work, but explicit rules can help if needed.
+# For this multi-page setup, we let standard resolution handle .html extensions.

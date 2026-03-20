@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title data-i18n="track_order_btn">تتبع طلبك | Navito</title>
+    <link rel="stylesheet" href="style.css">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&family=Outfit:wght@300;400;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+
+<body class="light-mode">
+    <header>
+        <div class="logo">
+            <a href="index.html">
+                <h1>NAVITO</h1>
+            </a>
+        </div>
+        <div class="header-actions">
+            <a href="index.html" class="btn-primary" data-i18n="home">الرئيسية</a>
+        </div>
+    </header>
+
+    <main class="container"
+        style="max-width: 800px; margin: 5rem auto; padding: 3rem; background: var(--card-bg); border-radius: 30px; box-shadow: 0 20px 50px rgba(0,0,0,0.05);">
+        <div style="text-align: center; margin-bottom: 3rem;">
+            <div style="font-size: 4rem; color: var(--luxury-gold); margin-bottom: 1rem;"><i
+                    class="fas fa-box-open"></i></div>
+            <h2 data-i18n="track_order_btn">تتبع حالة طلبك</h2>
+            <p data-i18n="enter_order_id">أدخل رقم الطلب المرسل إليك عبر البريد الإلكتروني أو الرسائل النصية</p>
+        </div>
+
+        <div class="search-wrapper-premium" style="margin: 0 auto; max-width: 100%;">
+            <input type="text" id="order-id-input" class="search-input-premium" placeholder="رقم الطلب (مثال: #12345)">
+            <button class="search-btn-premium" onclick="trackOrder()">
+                <span data-i18n="search">بحث</span>
+            </button>
+        </div>
+
+        <div id="tracking-result" style="margin-top: 4rem; display: none;">
+            <!-- Tracking status will be shown here -->
+            <div class="tracking-steps">
+                <div class="track-step active">
+                    <div class="step-icon"><i class="fas fa-check"></i></div>
+                    <div class="step-label">تم استلام الطلب</div>
+                </div>
+                <div class="track-step active">
+                    <div class="step-icon"><i class="fas fa-cog fa-spin"></i></div>
+                    <div class="step-label">جاري المعالجة</div>
+                </div>
+                <div class="track-step">
+                    <div class="step-icon"><i class="fas fa-shipping-fast"></i></div>
+                    <div class="step-label">في الطريق إليك</div>
+                </div>
+                <div class="track-step">
+                    <div class="step-icon"><i class="fas fa-home"></i></div>
+                    <div class="step-label">تم التسليم</div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <style>
+        .tracking-steps {
+            display: flex;
+            justify-content: space-between;
+            position: relative;
+            margin-top: 3rem;
+        }
+
+        .tracking-steps::before {
+            content: '';
+            position: absolute;
+            top: 25px;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: var(--border-color);
+            z-index: 1;
+        }
+
+        .track-step {
+            position: relative;
+            z-index: 2;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            flex: 1;
+        }
+
+        .step-icon {
+            width: 50px;
+            height: 50px;
+            background: var(--bg-secondary);
+            border: 2px solid var(--border-color);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+            transition: all 0.3s ease;
+        }
+
+        .track-step.active .step-icon {
+            background: var(--luxury-gold);
+            border-color: var(--luxury-gold);
+            color: white;
+            box-shadow: 0 0 15px rgba(212, 175, 55, 0.4);
+        }
+
+        .step-label {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: var(--text-secondary);
+        }
+
+        .track-step.active .step-label {
+            color: var(--luxury-gold);
+        }
+    </style>
+
+    <script src="i18n.js"></script>
+    <script>
+        function trackOrder() {
+            const id = document.getElementById('order-id-input').value;
+            if (!id) return;
+            document.getElementById('tracking-result').style.display = 'block';
+        }
+    </script>
+</body>
+
+</html>

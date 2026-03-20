@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="google" content="notranslate">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title data-i18n="admin_panel">لوحة الإدارة | Navito</title>
+    <link rel="stylesheet" href="style.css">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&family=Outfit:wght@300;400;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="icon"
+        href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🛍️</text></svg>">
+
+    <!-- Theme & Language Persistence Script - Prevents Flash -->
+    <script>
+        (function () {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            document.documentElement.className = savedTheme + '-mode';
+
+            const savedLang = localStorage.getItem('navito_language') || 'ar';
+            document.documentElement.lang = savedLang;
+
+            if (savedLang === 'en') {
+                document.write('<style id="i18n-hide-body">body { opacity: 0 !important; }</style>');
+                setTimeout(function () {
+                    document.documentElement.classList.add('i18n-ready');
+                }, 1500);
+            } else {
+                document.documentElement.classList.add('i18n-ready');
+            }
+        })();
+    </script>
+
+</head>
+
+<body class="admin-body">
+
+    <div class="admin-container">
+        <!-- Sidebar -->
+        <aside class="admin-sidebar">
+            <div class="sidebar-header">
+                <span style="font-size: 1.5rem;">🛍️</span>
+                <span data-i18n="admin_panel">لوحة الإدارة</span>
+            </div>
+
+            <ul class="sidebar-menu">
+                <li>
+                    <a href="#" class="active">
+                        <span>📊</span> <span data-i18n="menu_dashboard">لوحة المعلومات</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="products.html">
+                        <span>📦</span> <span data-i18n="menu_products">المنتجات</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="sales.html">
+                        <span>💰</span> <span data-i18n="menu_sales">المبيعات</span>
+                    </a>
+                    <!-- Submenu for Sales (Hidden by default) -->
+
+                </li>
+                <li>
+                    <a href="index.html" target="_blank">
+                        <span>🏪</span> <span data-i18n="menu_store">المتجر</span>
+                    </a>
+                </li>
+            </ul>
+
+            <ul class="sidebar-menu" style="flex: 0; margin-top: auto;">
+                <li>
+                    <a href="javascript:void(0)" onclick="adminLogout()" style="color: var(--danger-color);">
+                        <span>🚪</span> <span data-i18n="logout">تسجيل الخروج</span>
+                    </a>
+                </li>
+            </ul>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="admin-content">
+            <div class="admin-header">
+                <h2><span data-i18n="dashboard_title">لوحة المعلومات</span></h2>
+                <div class="header-actions">
+                    <!-- Theme Toggle -->
+                    <div class="nav-item-luxury" id="theme-toggle" onclick="toggleTheme()"
+                        style="height: 40px; min-width: 140px;">
+                        <div class="icon-display" id="theme-icon">☀️</div>
+                        <span id="theme-text" data-i18n="light_mode">الوضع النهاري</span>
+                    </div>
+
+                    <!-- Language Toggle -->
+                    <div class="nav-item-luxury" id="lang-toggle" onclick="toggleLanguage()"
+                        style="height: 40px; min-width: 100px;">
+                        <div class="icon-display">🌐</div>
+                        <span id="lang-text" style="font-weight: 700;">EN</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stats Grid -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon">💰</div>
+                    <div class="stat-value" id="stat-total-revenue">$0.00</div>
+                    <div class="stat-label" data-i18n="total_revenue">إجمالي المداخيل المالية</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">🛒</div>
+                    <div class="stat-value" id="stat-total-sales">0</div>
+                    <div class="stat-label" data-i18n="total_sales">المبيعات المحققة</div>
+                </div>
+                <a href="products.html?filter=low-stock" class="stat-card"
+                    style="text-decoration: none; cursor: pointer;">
+                    <div class="stat-icon">📈</div>
+                    <div class="stat-value" id="stat-low-stock">0</div>
+                    <div class="stat-label" data-i18n="low_stock">تنبيهات المخزون</div>
+                </a>
+                <a href="products.html" class="stat-card" style="text-decoration: none; cursor: pointer;">
+                    <div class="stat-icon">📦</div>
+                    <div class="stat-value" id="stat-total-products">0</div>
+                    <div class="stat-label" data-i18n="total_products">إجمالي المنتجات</div>
+                </a>
+            </div>
+
+            <h3 class="admin-section-title" data-i18n="sales_analysis">تحليل المبيعات</h3>
+
+            <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 20px; margin-top: 20px;">
+                <div class="stat-card" style="align-items: stretch;">
+                    <h3 data-i18n="sales_last_7_days">تحليل مبيعات الأسبوع</h3>
+                    <canvas id="salesChart" style="max-height: 300px;"></canvas>
+                </div>
+                <div class="stat-card luxury-insight-card" id="dashboard-insights">
+                    <div style="font-size: 2.5rem;" id="insight-icon">💡</div>
+                    <h3 data-i18n="store_insights" id="insight-title">تنبيهات ورؤى المتجر</h3>
+                    <div id="insight-content" class="insight-list">
+                        <!-- Dynamic alerts will appear here -->
+                        <p data-i18n="analyzing_data">جاري تحليل البيانات...</p>
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-top: 30px;">
+                <h3 class="admin-section-title" data-i18n="recent_orders">أحدث الطلبات</h3>
+                <div class="glass-table-wrapper">
+                    <table id="recent-orders-table">
+                        <thead>
+                            <tr>
+                                <th data-i18n="order_number">رقم الطلب</th>
+                                <th data-i18n="customer">العميل</th>
+                                <th data-i18n="amount">المبلغ</th>
+                                <th data-i18n="status">الحالة</th>
+                                <th data-i18n="date">التاريخ</th>
+                            </tr>
+                        </thead>
+                        <tbody id="recent-orders-list">
+                            <!-- Populated via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Products Section Moved to products.html -->
+        </main>
+    </div>
+
+    <div id="toast-container" class="toast-container"></div>
+    <!-- Chart.js Library -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- LocalStorage Mode - No Firebase needed -->
+    <!-- <script src="init-demo-data.js"></script> Removed broken file -->
+    <script src="i18n.js?v=1.1"></script>
+    <script src="admin.js?v=1.1"></script>
+    <script>
+        // Page-specific initialization if any is strictly needed and not covered by admin.js/i18n.js
+        // Currently admin.js handles global theme/lang init.
+        // We leave this empty or remove it. For now, empty to clean up.
+    </script>
+</body>
+
+</html>
