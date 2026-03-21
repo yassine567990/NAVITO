@@ -218,31 +218,32 @@
             if (icon) icon.textContent = isDark ? '☀️' : '🌙';
         });
 
-        function handleLogin(e) {
+        async function handleLogin(e) {
             e.preventDefault();
 
             const email = document.getElementById('login-email').value;
             const password = document.getElementById('login-password').value;
+            const btn = e.target.querySelector('button[type="submit"]');
 
-            // Get users
-            const users = JSON.parse(localStorage.getItem('navito_users') || '[]');
-            const user = users.find(u => u.email === email && u.password === password);
+            try {
+                if (btn) {
+                    btn.disabled = true;
+                    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري الدخول...';
+                }
 
-            if (user) {
-                // Store session
-                localStorage.setItem('navito_current_user', JSON.stringify({
-                    id: user.id,
-                    fullname: user.fullname,
-                    email: user.email,
-                    phone: user.phone
-                }));
-
-                showToast('مرحباً ' + user.fullname, 'success');
-                setTimeout(() => {
-                    window.location.href = 'index.html';
-                }, 1000);
-            } else {
-                showToast('البريد الإلكتروني أو كلمة المرور غير صحيحة', 'error');
+                if (typeof Utils !== 'undefined' && Utils.login) {
+                    const user = await Utils.login(email, password);
+                    showToast('مرحباً ' + user.fullname, 'success');
+                    setTimeout(() => {
+                        window.location.href = 'index.html';
+                    }, 1000);
+                }
+            } catch (error) {
+                showToast(error.message || 'البريد الإلكتروني أو كلمة المرور غير صحيحة', 'error');
+                if (btn) {
+                    btn.disabled = false;
+                    btn.textContent = 'تسجيل الدخول';
+                }
             }
         }
     </script>

@@ -22,9 +22,13 @@ const CartManager = {
     save() {
         localStorage.setItem('navito_cart', JSON.stringify(this.items));
         this.updateBadges();
-        // Re-render cart sidebar if it's open
+        // Re-render cart sidebar
         if (typeof NAVITO !== 'undefined' && typeof NAVITO.UI.renderCart === 'function') {
             NAVITO.UI.renderCart();
+        }
+        // Re-render checkout page if on it
+        if (typeof window.renderCheckoutPage === 'function') {
+            window.renderCheckoutPage();
         }
     },
 
@@ -61,7 +65,11 @@ const CartManager = {
 
     /** Get total price */
     getTotal() {
-        return this.items.reduce((sum, i) => sum + (i.price * i.quantity), 0);
+        return this.items.reduce((sum, i) => {
+            const price = parseFloat(i.price) || 0;
+            const quantity = parseInt(i.quantity) || 0;
+            return sum + (price * quantity);
+        }, 0);
     },
 
     /** Get total item count */

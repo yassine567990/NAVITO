@@ -20,74 +20,50 @@ const INITIAL_MOCK_PRODUCTS = [];
 const ORDERS_STORAGE_KEY = 'admin_orders_prod_v1';
 const INITIAL_MOCK_ORDERS = [];
 
-// --- Local Data Management ---
-// --- Cloud Data Management (Firebase) ---
+// --- API Data Management ---
 
-// LocalStorage-based Products Management
-function initRealTimeListeners() {
-    console.log('🔄 Using LocalStorage mode (offline-first)');
-
-    // Load products from LocalStorage
-    const products = getLocalProducts();
-
-    if (products.length > 0) {
-        window.allStoreProducts = products;
-        renderProducts(products);
-        updateDashboardStats(products);
-    } else {
-        console.log('No products in LocalStorage');
-        window.allStoreProducts = [];
-        renderProducts([]);
+async function fetchProducts() {
+    try {
+        if (typeof Utils !== 'undefined' && Utils.apiFetch) {
+            const products = await Utils.apiFetch('/products');
+            window.allStoreProducts = products;
+            renderAdminProductsTable(products);
+            updateDashboardStats(products);
+            return products;
+        }
+    } catch (error) {
+        console.error('Error fetching products:', error);
+        showToast(t('load_failed'), 'error');
     }
 }
 
-// Save Product to LocalStorage
 async function saveProductToCloud(product) {
     try {
-        // Get existing products
-        let products = getLocalProducts();
+        const method = product._id ? 'PUT' : 'POST';
+        const endpoint = product._id ? `/products/${product._id}` : '/products';
+        
+        await Utils.apiFetch(endpoint, {
+            method,
+            body: JSON.stringify(product)
+        });
 
-        // Find if product exists
-        const index = products.findIndex(p => p._id === product._id || p.id === product.id);
-
-        if (index >= 0) {
-            // Update existing
-            products[index] = product;
-        } else {
-            // Add new
-            products.push(product);
-        }
-
-        // Save to LocalStorage
-        saveLocalProducts(products);
-
-        // Update global state and UI
-        window.allStoreProducts = products;
-        renderProducts(products);
-        updateDashboardStats(products);
-
-        showToast(typeof t === 'function' ? t('product_saved') : 'Product saved successfully', 'success');
+        await fetchProducts();
+        showToast(t('product_saved'), 'success');
+        closeModal();
         return true;
     } catch (error) {
         console.error("Error saving product:", error);
-        showToast((typeof t === 'function' ? t('save_failed_prefix') : 'Save failed: ') + error.message, 'error');
+        showToast(t('save_error'), 'error');
         return false;
     }
 }
 
-// Delete Product from LocalStorage
 async function deleteProductFromCloud(productId) {
     try {
-        let products = getLocalProducts();
-        products = products.filter(p => p._id !== productId && p.id !== productId);
-
-        saveLocalProducts(products);
-
-        // Update global state and UI
-        window.allStoreProducts = products;
-        renderProducts(products);
-        updateDashboardStats(products);
-
+        await Utils.apiFetch(`/products/${productId}`, {
+            method: 'DELETE'
+        });
+        await fetchProducts();
         showToast(t('product_deleted'), 'success');
         return true;
     } catch (error) {
@@ -97,40 +73,42 @@ async function deleteProductFromCloud(productId) {
     }
 }
 
-// Legacy Local Functions (Modified to trigger Cloud IF available, else Local)
+let previousOrdersCount = -1;
+
+async function fetchOrders() {
+    try {
+        const orders = await Utils.apiFetch('/orders');
+        
+        // التحقق من وجود طلبيات جديدة
+        if (previousOrdersCount !== -1 && orders.length > previousOrdersCount) {
+            const newCount = orders.length - previousOrdersCount;
+            showNewOrderNotification(newCount);
+        }
+        previousOrdersCount = orders.length;
+
+        window.currentOrders = orders;
+        renderOrdersTable(orders);
+        updateDashboardStats(window.allStoreProducts || []);
+        return orders;
+    } catch (error) {
+        console.error('Error fetching orders:', error);
+    }
+}
+
+function showNewOrderNotification(count) {
+    // تشغيل صوت تنبيه احترافي
+    const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+    audio.play().catch(e => console.log("Audio play blocked by browser policy"));
+
+    const msg = count === 1 ? 'طلبية جديدة واردة! 🛍️' : `${count} طلبيات جديدة واردة! 🛍️`;
+    showToast(msg, 'success');
+}
+
+// فحص تلقائي كل 30 ثانية
+setInterval(fetchOrders, 30000);
+
 function getLocalProducts() {
-    try {
-        const data = localStorage.getItem(STORAGE_KEY);
-        return data ? JSON.parse(data) : [];
-    } catch (e) {
-        console.error('Error reading LocalStorage:', e);
-        return [];
-    }
-}
-
-function saveLocalProducts(products) {
-    // This function was used to save the WHOLE array. 
-    // In Cloud mode, we simply ignore this or use it to update LocalStorage as a cache.
-    // For now, let's keep LocalStorage as a backup/cache
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(products));
-}
-
-function getLocalOrders() {
-    try {
-        const data = localStorage.getItem(ORDERS_STORAGE_KEY);
-        return data ? JSON.parse(data) : [];
-    } catch (e) {
-        console.error('Error reading orders from LocalStorage:', e);
-        return [];
-    }
-}
-
-function saveLocalOrders(orders) {
-    try {
-        localStorage.setItem(ORDERS_STORAGE_KEY, JSON.stringify(orders));
-    } catch (e) {
-        console.error('Error saving orders to LocalStorage:', e);
-    }
+    return window.allStoreProducts || [];
 }
 
 // --- Global Functions (Bound to Window immediately) ---
@@ -600,36 +578,22 @@ document.addEventListener('DOMContentLoaded', () => {
     if (loader) loader.style.display = 'block';
 
     // Fetch Logic
-    async function fetchProducts() {
-        // Timeout Safety
-        const timeout = new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('Timeout')), 2000)
-        );
-
+    async function initAdmin() {
+        if (loader) loader.style.display = 'block';
         try {
-            const res = await Promise.race([
-                fetch(ADMIN_API_URL).catch(e => { throw new Error('Network Error') }),
-                timeout
+            await Promise.all([
+                fetchProducts(),
+                fetchOrders()
             ]);
-
-            if (!res.ok) throw new Error(`API Error ${res.status} `);
-            const products = await res.json();
-
-            if (products.length === 0) showToast(t('no_products_to_show'), 'info');
-
-            renderAdminProductsTable(products);
-            updateDashboardStats(products);
-
         } catch (err) {
-            // Fallback: Check if MOCK_PRODUCTS from app.js is available
-            console.warn('Network unavailable, using local data', err);
-            const fallbackData = getLocalProducts();
-            renderProducts(fallbackData);
-            updateDashboardStats(fallbackData);
+            console.error('Initialization error:', err);
         } finally {
             if (loader) loader.style.display = 'none';
         }
     }
+
+    // Run initialization
+    initAdmin();
 
 
 

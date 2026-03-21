@@ -201,7 +201,7 @@
             }
         });
 
-        function handleRegister(e) {
+        async function handleRegister(e) {
             e.preventDefault();
 
             const fullname = document.getElementById('fullname').value;
@@ -209,6 +209,7 @@
             const phone = document.getElementById('phone').value;
             const password = document.getElementById('password').value;
             const confirmPassword = document.getElementById('confirm-password').value;
+            const btn = e.target.querySelector('button[type="submit"]');
 
             // Validation
             if (password !== confirmPassword) {
@@ -216,30 +217,26 @@
                 return;
             }
 
-            // Check if user exists
-            const users = JSON.parse(localStorage.getItem('navito_users') || '[]');
-            if (users.find(u => u.email === email)) {
-                showToast('البريد الإلكتروني مسجل بالفعل', 'error');
-                return;
+            try {
+                if (btn) {
+                    btn.disabled = true;
+                    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري إنشاء الحساب...';
+                }
+
+                if (typeof Utils !== 'undefined' && Utils.register) {
+                    await Utils.register({ fullname, email, phone, password });
+                    showToast('تم إنشاء الحساب بنجاح!', 'success');
+                    setTimeout(() => {
+                        window.location.href = 'index.html';
+                    }, 1500);
+                }
+            } catch (error) {
+                showToast(error.message || 'حدث خطأ أثناء التسجيل', 'error');
+                if (btn) {
+                    btn.disabled = false;
+                    btn.textContent = 'إنشاء الحساب';
+                }
             }
-
-            // Create user
-            const user = {
-                id: 'user-' + Date.now(),
-                fullname,
-                email,
-                phone,
-                password, // In production, NEVER store plain passwords!
-                createdAt: new Date().toISOString()
-            };
-
-            users.push(user);
-            localStorage.setItem('navito_users', JSON.stringify(users));
-
-            showToast('تم إنشاء الحساب بنجاح!', 'success');
-            setTimeout(() => {
-                window.location.href = 'login.html';
-            }, 1500);
         }
     </script>
 </body>

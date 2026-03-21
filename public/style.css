@@ -71,7 +71,7 @@ h1, h2, h3, h4, .hero-title, .section-title, .title-luxury {
 [lang="ar"] .hero-subtitle, 
 [lang="ar"] .title-luxury {
     direction: rtl !important;
-    text-align: right !important;
+    text-align: center !important;
 }
 
 /* i18n Flash Prevention */
@@ -322,7 +322,7 @@ header {
     align-items: center;
     border-bottom: 1px solid var(--border-color);
     position: sticky;
-    top: 22px;
+    top: 0;
     left: 0;
     width: 100%;
     /* For desktop, sits below 22px announcement bar */
@@ -4709,8 +4709,8 @@ footer .container {
     /* Ultra-mini height */
     height: 22px;
     overflow: hidden;
-    position: sticky;
-    top: 0;
+    position: relative;
+    top: auto;
     left: 0;
     width: 100%;
     z-index: 1001;

@@ -1,4 +1,4 @@
-// Sample Products Script - 20 Luxury Beauty Products
+// سكريبت المنتجات التجريبية - 20 منتج تجميل فاخر
 const sampleProducts = [
     {
         id: "beauty1",
@@ -241,12 +241,12 @@ const sampleProducts = [
     }
 ];
 
-// Only add sample products if the store has less than the full sample set
+// إضافة المنتجات التجريبية فقط إذا كان المتجر يحتوي على أقل من المجموعة الكاملة (20 منتج)
 const existingProducts = JSON.parse(localStorage.getItem('admin_products_prod_v1') || '[]');
 if (existingProducts.length < 20) {
-    // Merge or overwrite to ensure we have all 20
+    // دمج أو استبدال لضمان توفر كافة الـ 20 منتجاً
     localStorage.setItem('admin_products_prod_v1', JSON.stringify(sampleProducts));
     console.log('✅ تم تحديث وإضافة المنتجات الفاخرة الـ 20 بنجاح!');
 } else {
-    console.log('ℹ️ Products already exist in LocalStorage.');
+    console.log('ℹ️ المنتجات موجودة بالفعل في التخزين المحلي (LocalStorage).');
 }

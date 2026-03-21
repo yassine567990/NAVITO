@@ -1,26 +1,26 @@
 /**
- * Navito Elite Storefront App - Namespaced & Hardened
+ * تطبيق نافيتو المتطور (Storefront App) - منظم ومحمي
  * (C) 2026 NAVITO
  */
 
 window.NAVITO = {
     Config: {
-        FREE_SHIPPING_THRESHOLD: 500,
-        CURRENCY_DEFAULT: 'MAD',
-        LOCALE_DEFAULT: 'ar'
+        FREE_SHIPPING_THRESHOLD: 500, // حد الشحن المجاني
+        CURRENCY_DEFAULT: 'MAD', // العملة الافتراضية
+        LOCALE_DEFAULT: 'ar' // اللغة الافتراضية
     },
 
     State: {
         products: [],
         currentCategory: 'الكل',
         get currentLang() {
-            // Always read fresh from localStorage so language changes are instant
+            // قراءة اللغة من التخزين المحلي لضمان التحديث الفوري
             return localStorage.getItem('navito_language') || 'ar';
         }
     },
 
     UI: {
-        // Auth UI
+        // واجهة المستخدم للمصادقة (Auth UI)
         updateAuth: function () {
             const btn = document.getElementById('mobile-account-btn');
             const desktopBtnText = document.getElementById('desktop-account-text');
@@ -54,7 +54,7 @@ window.NAVITO = {
             }
         },
 
-        // Cart Toggle (Definitive Solution)
+        // تبديل حالة العربة (إغلاق / فتح)
         toggleCart: function (forceClose = false) {
             try {
                 const sidebar = document.getElementById('cart-sidebar');
@@ -74,15 +74,15 @@ window.NAVITO = {
                     document.body.style.overflow = 'hidden';
                     NAVITO.UI.renderCart();
                     
-                    // Safe Sound
+                    // تشغيل صوت العربة (بأمان)
                     setTimeout(() => { try { playCartSound(); } catch(e){} }, 50);
                 }
             } catch (err) {
-                console.error('NAVITO.UI.toggleCart error:', err);
+                console.error('خطأ في NAVITO.UI.toggleCart:', err);
             }
         },
 
-        // Cart Rendering
+        // عرض محتويات العربة
         renderCart: function () {
             const container = document.getElementById('cart-items');
             const totalEl = document.getElementById('cart-total');
@@ -138,7 +138,7 @@ window.NAVITO = {
                 text.innerHTML = isEnglish ? '🎉 You got <strong>FREE SHIPPING!</strong>' : '🎉 مبروك! حصلت على <strong>شحن مجاني!</strong>';
             }
         },
-        
+        // عرض شبكة المنتجات
         renderProducts: function(products) {
             const mainGrid = document.getElementById('products-grid');
             if (!mainGrid) return;
@@ -152,6 +152,7 @@ window.NAVITO = {
     },
 
     Logic: {
+        // الشراء الفوري
         buyNow: function (id) {
             if (typeof Utils !== 'undefined' && !Utils.isLoggedIn()) {
                 if (typeof showToast === 'function') showToast(t('please_login'), 'warning');
@@ -164,7 +165,7 @@ window.NAVITO = {
                 window.location.href = 'checkout.html';
             }
         },
-        
+        // الفلترة حسب التصنيف
         filterByCategory: function(category) {
             NAVITO.State.currentCategory = category;
             document.querySelectorAll('.category-pill').forEach(pill => {
@@ -174,6 +175,7 @@ window.NAVITO = {
             NAVITO.Logic.applyFilters(term, category);
         },
 
+        // تطبيق الفلاتر (البحث والتصنيف)
         applyFilters: function(term, category) {
             let filtered = NAVITO.State.products;
             if (category !== 'الكل') filtered = filtered.filter(p => p.category === category);
@@ -189,6 +191,7 @@ window.NAVITO = {
     },
 
     Templates: {
+        // قالب بطاقة المنتج
         productCard: function(product) {
             const isEnglish = (NAVITO.State.currentLang === 'en');
             const name = isEnglish ? (product.nameEn || product.name) : (product.name_ar || product.name);
@@ -223,6 +226,7 @@ window.NAVITO = {
                 </div>`;
         },
 
+        // قالب عنصر العربة
         cartItem: function(item) {
             const isEnglish = (NAVITO.State.currentLang === 'en');
             const name = isEnglish ? (item.nameEn || item.name) : item.name;
@@ -234,7 +238,7 @@ window.NAVITO = {
                         <div class="cart-item-title">${name}</div>
                         <div class="cart-item-price">${currency} ${item.price.toFixed(2)} × ${item.quantity}</div>
                         <div class="cart-item-controls">
-                            <button class="qty-btn navito-action-qty" data-name="${item.name}" data-delta="-1">-</button>
+                            <button class="qty-btn navito-action-qty" data-name="${item.name}" data-delta="-1">${item.quantity === 1 ? '<i class="fas fa-trash-alt" style="font-size:0.8rem;"></i>' : '-'}</button>
                             <span style="min-width:30px; text-align:center;">${item.quantity}</span>
                             <button class="qty-btn navito-action-qty" data-name="${item.name}" data-delta="1">+</button>
                         </div>
@@ -245,51 +249,52 @@ window.NAVITO = {
     },
 
     Init: {
+        // تهيئة الأحداث (Event Listeners)
         events: function() {
-            // Central Global Click Delegation
+            // تفويض النقرات المركزي (Centralized Click Delegation)
             document.addEventListener('click', (e) => {
                 const target = e.target;
                 
-                // Account Click
+                // نقرة الحساب
                 if (target.closest('#mobile-account-btn') || target.closest('.top-bar-link[data-i18n="account"]') || target.closest('.nav-item-account')) {
                     if (typeof handleAccountClick === 'function') handleAccountClick();
                 }
 
-                // Details Click
+                // نقرة التفاصيل
                 if (target.closest('.navito-action-details') || target.closest('.view-details-pill')) {
                     const btn = target.closest('.navito-action-details') || target.closest('.view-details-pill');
                     const id = btn.getAttribute('data-id') || btn.onclick?.toString().match(/'(.*?)'/)?.[1]; // Fallback for old templates
                     if (id && typeof openProductModal === 'function') openProductModal(id);
                 }
                 
-                // Buy Now Click
+                // نقرة الشراء الآن
                 if (target.closest('.navito-action-buy') || target.id === 'modal-buy-now') {
                     const id = target.getAttribute('data-id') || window.currentProductId;
                     NAVITO.Logic.buyNow(id);
                 }
 
-                // Add to Cart from Modal
+                // الإضافة للسلة من النافذة المنبثقة
                 if (target.id === 'modal-add-cart') {
                     if (typeof addToCartFromModal === 'function') addToCartFromModal();
                 }
                 
-                // Cart Toggle Buttons
+                // أزرار تبديل العربة
                 if (target.closest('.close-cart') || target.closest('.close-label') || target.closest('.mobile-only-close') || target.closest('.cart-overlay') || target.closest('.nav-item-cart') || target.id === 'cart-toggle-btn') {
                     NAVITO.UI.toggleCart();
                 }
                 
-                // Start Shopping (Empty Cart)
+                // ابدأ التسوق (عندما تكون السلة فارغة)
                 if (target.classList.contains('navito-action-start-shopping')) {
                     NAVITO.UI.toggleCart(true);
                     document.getElementById('shop-section')?.scrollIntoView({ behavior: 'smooth' });
                 }
 
-                // Cart Checkout
+                // إتمام الطلب (Checkout)
                 if (target.id === 'cart-checkout-btn' || target.classList.contains('navito-checkout-trigger')) {
                     if (typeof window.startCartCheckout === 'function') window.startCartCheckout();
                 }
 
-                // Cart Quantity Buttons
+                // أزرار كمية العناصر في العربة
                 if (target.closest('.navito-action-qty')) {
                     const btn = target.closest('.navito-action-qty');
                     if (typeof CartManager !== 'undefined') {
@@ -297,19 +302,19 @@ window.NAVITO = {
                     }
                 }
 
-                // Cart Remove Button
+                // زر حذف عنصر من العربة
                 if (target.closest('.navito-action-remove')) {
                     if (typeof CartManager !== 'undefined') {
                         CartManager.removeItem(target.closest('.navito-action-remove').getAttribute('data-name'));
                     }
                 }
                 
-                // Mobile Menu Toggle
+                // تبديل القائمة الجانبية للهاتف
                 if (target.closest('.mobile-menu-toggle') || target.closest('.drawer-close') || target.id === 'drawer-overlay' || target.closest('.menu-toggle')) {
                     if (typeof toggleMobileMenu === 'function') toggleMobileMenu();
                 }
 
-                // Theme Toggle
+                // تبديل السمة (ليلي/نهاري)
                 if (target.closest('#theme-toggle-nav') || target.closest('#theme-toggle-drawer')) {
                     if (typeof toggleTheme === 'function') {
                         toggleTheme();
@@ -317,7 +322,7 @@ window.NAVITO = {
                     }
                 }
 
-                // Language Toggle
+                // تبديل اللغة
                 if (target.closest('#lang-toggle-nav') || target.closest('#lang-toggle-drawer') || target.closest('.language-switcher')) {
                     if (typeof toggleLanguage === 'function') {
                         toggleLanguage();
@@ -325,7 +330,7 @@ window.NAVITO = {
                     }
                 }
 
-                // Country Toggle
+                // تبديل الدولة
                 if (target.closest('#country-toggle-top') || target.closest('#country-toggle-drawer')) {
                     if (typeof toggleCountry === 'function') {
                         toggleCountry();
@@ -333,23 +338,23 @@ window.NAVITO = {
                     }
                 }
 
-                // Modal Close
+                // إغلاق نافذة المنتج
                 if (target.closest('.modal-close') || target.closest('.btn-close-bottom')) {
                     if (typeof closeProductModal === 'function') closeProductModal();
                 }
 
-                // Popup Close
+                // إغلاق النافذة المنبثقة
                 if (target.closest('.popup-close') || target.closest('.btn-text-luxury[data-i18n="no_thanks"]')) {
                     if (typeof closePopup === 'function') closePopup();
                 }
 
-                // Smooth Scroll Links
+                // أزرار الانتقال السلس
                 if (target.closest('.hero-action-btn')) {
                     document.getElementById('shop-section')?.scrollIntoView({ behavior: 'smooth' });
                 }
             });
 
-            // Search Bar
+            // شريط البحث
             const input = document.getElementById('main-search-input');
             if (input && typeof Utils !== 'undefined') {
                 input.addEventListener('input', Utils.debounce(() => {
@@ -357,7 +362,7 @@ window.NAVITO = {
                 }, 300));
             }
             
-            // Category Pills delegation
+            // تبويبات التصنيفات
             document.addEventListener('click', (e) => {
                 if (e.target.classList.contains('category-pill')) {
                     NAVITO.Logic.filterByCategory(e.target.textContent);
@@ -365,36 +370,41 @@ window.NAVITO = {
             });
         },
 
-        app: function() {
-            // Sync language state from localStorage (fresh read)
+        // تهيئة التطبيق الرئيسية
+        app: async function() {
+            // مزامنة حالة اللغة من التخزين المحلي
             const lang = localStorage.getItem('navito_language') || 'ar';
             document.documentElement.lang = lang;
             document.documentElement.dir = lang === 'en' ? 'ltr' : 'rtl';
 
-            // Load products - add-sample-products.js may have already seeded them
-            NAVITO.State.products = getLocalStoreProducts();
+            // تحميل المنتجات من الخادم
+            try {
+                NAVITO.State.products = await getLocalStoreProducts();
+            } catch (e) {
+                console.error('[NAVITO] فشل تحميل المنتجات الحقيقية:', e);
+            }
             
             if (typeof CartManager !== 'undefined') CartManager.init();
             NAVITO.UI.updateAuth();
             NAVITO.Logic.applyFilters('', 'الكل');
             NAVITO.Init.events();
 
-            // Real-time sync when products change in another tab
-            window.addEventListener('storage', (e) => {
+            // المزامنة في الوقت الفعلي عند تغيير المنتجات في تبويب آخر
+            window.addEventListener('storage', async (e) => {
                 if (e.key === 'admin_products_prod_v1') {
-                    NAVITO.State.products = getLocalStoreProducts();
+                    NAVITO.State.products = await getLocalStoreProducts();
                     NAVITO.Logic.applyFilters('', NAVITO.State.currentCategory);
                 }
             });
 
-            console.log(`💎 NAVITO Elite App Initialized | Lang: ${lang} | Products: ${NAVITO.State.products.length}`);
+            console.log(`💎 تم تهيئة تطبيق نافيتو الفاخر | اللغة: ${lang} | عدد المنتجات: ${NAVITO.State.products.length}`);
         }
 
     }
 };
 
 // ─────────────────────────────────────────────
-// Backwards Compatibility Aliases
+// أسماء مستعارة للتوافق مع الإصدارات السابقة
 // ─────────────────────────────────────────────
 window.toggleCart = NAVITO.UI.toggleCart.bind(NAVITO.UI);
 window.renderCart = NAVITO.UI.renderCart.bind(NAVITO.UI);
@@ -403,20 +413,24 @@ window.filterByCategory = NAVITO.Logic.filterByCategory.bind(NAVITO.Logic);
 window.allStoreProducts = NAVITO.State.products;
 
 // ─────────────────────────────────────────────
-// Product Data Access
+// الوصول إلى بيانات المنتجات من الخادم
 // ─────────────────────────────────────────────
-function getLocalStoreProducts() {
+async function getLocalStoreProducts() {
     try {
-        return JSON.parse(localStorage.getItem('admin_products_prod_v1') || '[]');
+        if (typeof Utils !== 'undefined' && Utils.apiFetch) {
+            const products = await Utils.apiFetch('/products');
+            window.allStoreProducts = products;
+            return products;
+        }
     } catch (e) {
-        console.warn('[NAVITO] Failed to load products from localStorage', e);
-        return [];
+        console.warn('[NAVITO] فشل تحميل المنتجات من الخادم، العودة للتخزين المحلي', e);
+        return JSON.parse(localStorage.getItem('admin_products_prod_v1') || '[]');
     }
 }
 window.getLocalStoreProducts = getLocalStoreProducts;
 
 // ─────────────────────────────────────────────
-// Checkout Logic
+// منطق إتمام الطلب (Checkout)
 // ─────────────────────────────────────────────
 window.startCartCheckout = function () {
     localStorage.removeItem('navito_direct_buy');
@@ -431,54 +445,121 @@ window.renderCheckoutPage = function () {
     const container = document.getElementById('checkout-items');
     if (!container) return;
     const items = CartManager.items;
-    if (items.length === 0) { window.location.href = 'index.html'; return; }
+    if (items.length === 0) {
+        window.location.href = 'index.html';
+        return;
+    }
     const currency = typeof t === 'function' ? t('currency') : 'MAD';
-    container.innerHTML = items.map(item => `
-        <div class="checkout-item">
-            <img src="${item.image}" alt="${item.name}">
-            <div class="checkout-item-details">
-                <h4>${item.name}</h4>
-                <p>${currency} ${item.price.toFixed(2)} × ${item.quantity}</p>
-            </div>
-            <div class="checkout-item-subtotal">${currency} ${(item.price * item.quantity).toFixed(2)}</div>
-        </div>`).join('');
+
+    let html = '';
+    items.forEach(item => {
+        const price = parseFloat(item.price) || 0;
+        const qty = parseInt(item.quantity) || 1;
+        const itemTotal = price * qty;
+
+        html += `
+            <div class="order-item">
+                <img src="${item.image}" alt="${item.name}" class="item-image">
+                <div class="item-details">
+                    <div class="item-name">${item.name || 'Product'}</div>
+                    <div class="item-quantity">
+                        <div class="cart-item-controls" style="margin: 0.5rem 0; display: flex; align-items: center; gap: 10px;">
+                            <button class="qty-btn navito-action-qty" data-name="${item.name}" data-delta="-1" style="width:24px; height:24px; border-radius:4px; border:1px solid var(--border-color); background:var(--bg-secondary); cursor:pointer; display:flex; align-items:center; justify-content:center;">
+                                ${qty === 1 ? '<i class="fas fa-trash-alt" style="font-size:0.7rem; color:var(--danger-color);"></i>' : '-'}
+                            </button>
+                            <span style="font-weight:700;">${qty}</span>
+                            <button class="qty-btn navito-action-qty" data-name="${item.name}" data-delta="1" style="width:24px; height:24px; border-radius:4px; border:1px solid var(--border-color); background:var(--bg-secondary); cursor:pointer;">+</button>
+                        </div>
+                        <span style="opacity: 0.8;">${currency} ${price.toFixed(2)}</span>
+                    </div>
+                    <div class="item-price">${currency} ${itemTotal.toFixed(2)}</div>
+                </div>
+            </div>`;
+    });
+    container.innerHTML = html;
+
     const subtotal = CartManager.getTotal();
+    const itemCount = CartManager.getCount();
+    const subLabel = document.querySelector('[data-i18n="subtotal"]');
     const sub = document.getElementById('checkout-subtotal');
     const tot = document.getElementById('checkout-total');
+    
+    const lang = localStorage.getItem('navito_language') || 'ar';
+    if (subLabel) {
+        const text = lang === 'en' ? `Subtotal (${itemCount} items)` : `المجموع الفرعي (${itemCount} قطع)`;
+        subLabel.textContent = text;
+    }
+
     if (sub) sub.textContent = `${currency} ${subtotal.toFixed(2)}`;
     if (tot) tot.textContent = `${currency} ${subtotal.toFixed(2)}`;
 };
 
-window.handleCheckout = function (e) {
+window.handleCheckout = async function (e) {
     e.preventDefault();
     const btn = e.target.querySelector('button[type="submit"]');
-    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>'; }
+    
+    // التحقق من تسجيل الدخول
+    if (typeof Utils !== 'undefined' && !Utils.isLoggedIn()) {
+        if (typeof showToast === 'function') showToast(typeof t === 'function' ? t('please_login') : 'يرجى تسجيل الدخول أولاً', 'error');
+        setTimeout(() => window.location.href = 'login.html', 1500);
+        return;
+    }
+
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري تأكيد الطلب...';
+    }
+
     const formData = new FormData(e.target);
+    const shippingDetails = Object.fromEntries(formData.entries());
+
     const orderData = {
-        items: CartManager.items,
-        total: CartManager.getTotal(),
-        customer: Object.fromEntries(formData.entries()),
-        date: new Date().toISOString(),
-        orderId: 'NAV-' + Math.random().toString(36).substr(2, 9).toUpperCase()
+        orderItems: (typeof CartManager !== 'undefined' ? CartManager.items : []).map(item => ({
+            product: item._id, // تأكد أن ID المنتج قادم من الخادم
+            name: item.name,
+            price: item.price,
+            quantity: item.quantity,
+            image: item.image
+        })),
+        totalAmount: typeof CartManager !== 'undefined' ? CartManager.getTotal() : 0,
+        shippingAddress: {
+            fullname: shippingDetails.full_name,
+            address: shippingDetails.full_address,
+            city: shippingDetails.city,
+            postal: shippingDetails.postal,
+            phone: shippingDetails.phone
+        },
+        paymentMethod: 'Cash on Delivery'
     };
-    const orders = JSON.parse(localStorage.getItem('navito_orders') || '[]');
-    orders.push(orderData);
-    localStorage.setItem('navito_orders', JSON.stringify(orders));
-    setTimeout(() => {
-        CartManager.clear();
-        if (typeof showToast === 'function') showToast((typeof t === 'function' ? t('order_success_msg') : 'Order placed! #') + orderData.orderId, 'success');
-    }, 1500);
+
+    try {
+        if (typeof Utils !== 'undefined' && Utils.createOrder) {
+            const result = await Utils.createOrder(orderData);
+            if (typeof CartManager !== 'undefined') CartManager.clear();
+            if (typeof showToast === 'function') {
+                const msg = (typeof t === 'function' ? t('order_success_msg') : 'تم تسجيل طلبك بنجاح! رقم الطلب: ') + result.orderId;
+                showToast(msg, 'success');
+            }
+            setTimeout(() => window.location.href = 'index.html', 3000);
+        }
+    } catch (error) {
+        if (typeof showToast === 'function') showToast(error.message || 'حدث خطأ أثناء معالجة الطلب', 'error');
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = typeof t === 'function' ? t('confirm_order') : 'تأكيد الطلب';
+        }
+    }
 };
 
 // ─────────────────────────────────────────────
-// Account Handler
+// معالج الحساب (Account Handler)
 // ─────────────────────────────────────────────
 window.handleAccountClick = function () {
     const isLoggedIn = typeof Utils !== 'undefined' ? Utils.isLoggedIn() : (!!localStorage.getItem('navito_current_user'));
     if (isLoggedIn) {
         const user = JSON.parse(localStorage.getItem('navito_current_user') || '{}');
         
-        // Populate modal
+        // تعبئة البيانات في النافذة المنبثقة
         const nameEl = document.getElementById('account-name');
         const emailEl = document.getElementById('account-email');
         const phoneEl = document.getElementById('account-phone');
@@ -487,7 +568,7 @@ window.handleAccountClick = function () {
         if (emailEl) emailEl.textContent = user.email || '-';
         if (phoneEl) phoneEl.textContent = user.phone || '-';
         
-        // Show modal
+        // إظهار النافذة
         const modal = document.getElementById('account-modal');
         if (modal) {
             modal.classList.add('active');
@@ -521,7 +602,7 @@ window.handleLogout = function () {
 };
 
 // ─────────────────────────────────────────────
-// Mobile Menu
+// القائمة الجانبية للهاتف
 // ─────────────────────────────────────────────
 window.toggleMobileMenu = function () {
     const drawer = document.getElementById('mobile-drawer');
@@ -530,7 +611,7 @@ window.toggleMobileMenu = function () {
     const isOpen = drawer.classList.toggle('active');
     overlay.classList.toggle('active', isOpen);
     document.body.style.overflow = isOpen ? 'hidden' : '';
-    // Sync drawer UI state
+    // مزامنة واجهة القائمة الجانبية
     const lang = localStorage.getItem('navito_language') || 'ar';
     const isDark = document.documentElement.classList.contains('dark-mode');
     const themeText = document.getElementById('drawer-theme-text');
@@ -542,7 +623,7 @@ window.toggleMobileMenu = function () {
 };
 
 // ─────────────────────────────────────────────
-// Particle & Animation Helpers (used by CartManager)
+// مساعدات الجزيئات والرسوم المتحركة (تستخدم بواسطة CartManager)
 // ─────────────────────────────────────────────
 function createParticles(btn) {
     if (!btn) return;
@@ -576,7 +657,7 @@ function animateFlyToCart(btn, imgSrc) {
 }
 
 // ─────────────────────────────────────────────
-// Global Sound Utility
+// أداة الصوت العامة
 // ─────────────────────────────────────────────
 function playCartSound() {
     try {
@@ -596,7 +677,7 @@ function playCartSound() {
 }
 
 // ─────────────────────────────────────────────
-// App Initialization — runs AFTER all scripts load
+// تهيئة التطبيق - تعمل بعد تحميل كافة السكريبتات
 // ─────────────────────────────────────────────
 // Use window.addEventListener('load') instead of DOMContentLoaded
 // so that add-sample-products.js has already seeded the localStorage
