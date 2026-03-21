@@ -21,7 +21,10 @@ app.use(express.static(path.join(__dirname, '../public')));
 if (process.env.MONGODB_URI && process.env.MONGODB_URI !== 'mongodb://localhost:27017/navito_db') {
     mongoose.connect(process.env.MONGODB_URI)
         .then(() => console.log('✅ Connected to MongoDB (Cloud)'))
-        .catch(err => console.log('ℹ️ Using Local NeDB (MongoDB connection failed)'));
+        .catch(err => {
+            console.error('❌ MongoDB Connection Error:', err.message);
+            console.log('ℹ️ Using Local NeDB (Fallback enabled)');
+        });
 } else {
     console.log('ℹ️ Running in Local Hybrid mode (NeDB enabled)');
 }
