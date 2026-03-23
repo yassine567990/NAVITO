@@ -47,7 +47,7 @@ app.get('/api', (req, res) => {
 });
 
 // Catch-all route to serve index.html for any SPA-like subpaths (optional but good practice)
-app.get('*', (req, res) => {
+app.get('(.*)', (req, res) => {
     if (!req.path.startsWith('/api')) {
         res.sendFile(path.join(publicPath, 'index.html'));
     } else {
