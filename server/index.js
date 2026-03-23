@@ -14,7 +14,9 @@ app.use(cors());
 app.use(morgan('dev'));
 
 // Static Files (Frontend)
-app.use(express.static(path.join(__dirname, '../public')));
+const publicPath = path.join(__dirname, '../public');
+app.use(express.static(publicPath));
+console.log(`ℹ️ Serving static files from: ${publicPath}`);
 
 // Database Connection
 // Database Connection (Optional in Hybrid Mode)
@@ -34,9 +36,23 @@ app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/products', require('./routes/productRoutes'));
 app.use('/api/orders', require('./routes/orderRoutes'));
 
-// Basic Route
+// Basic Route - Serve index.html as the entry point
 app.get('/', (req, res) => {
+    res.sendFile(path.join(publicPath, 'index.html'));
+});
+
+// JSON fallback for API testing (accessible via /api)
+app.get('/api', (req, res) => {
     res.json({ message: 'Welcome to NAVITO API v1.0' });
+});
+
+// Catch-all route to serve index.html for any SPA-like subpaths (optional but good practice)
+app.get('*', (req, res) => {
+    if (!req.path.startsWith('/api')) {
+        res.sendFile(path.join(publicPath, 'index.html'));
+    } else {
+        res.status(404).json({ message: 'API route not found' });
+    }
 });
 
 // Run Server
