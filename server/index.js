@@ -46,13 +46,18 @@ app.get('/api', (req, res) => {
     res.json({ message: 'Welcome to NAVITO API v1.0' });
 });
 
-// Catch-all route to serve index.html for any SPA-like subpaths (optional but good practice)
-app.get('(.*)', (req, res) => {
+// Catch-all: serve index.html for any non-API routes (SPA support)
+app.use((req, res, next) => {
     if (!req.path.startsWith('/api')) {
         res.sendFile(path.join(publicPath, 'index.html'));
     } else {
-        res.status(404).json({ message: 'API route not found' });
+        next();
     }
+});
+
+// API 404 handler
+app.use('/api', (req, res) => {
+    res.status(404).json({ message: 'API route not found' });
 });
 
 // Run Server
