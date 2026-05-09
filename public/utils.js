@@ -1,44 +1,17 @@
 /**
  * نافيتو - الأدوات المساعدة المشتركة (Navito Shared Utilities)
- * توحد المنطق البرمجي المشترك بين واجهة المتجر ولوحة الإدارة
+ * Powered by Supabase — no backend server required.
  */
 
 const Utils = {
-    API_URL: 'http://localhost:5000/api',
 
     /**
-     * مساعد جلب البيانات المركزي (Central API Fetcher)
-     */
-    apiFetch: async function (endpoint, options = {}) {
-        const token = localStorage.getItem('navito_token');
-        const headers = {
-            'Content-Type': 'application/json',
-            ...options.headers
-        };
-
-        if (token) {
-            headers['Authorization'] = `Bearer ${token}`;
-        }
-
-        try {
-            const response = await fetch(`${this.API_URL}${endpoint}`, {
-                ...options,
-                headers
-            });
-            const data = await response.json();
-            if (!response.ok) throw new Error(data.message || 'خطأ في الاتصال بالخادم');
-            return data;
-        } catch (error) {
-            console.error(`[API Error] ${endpoint}:`, error);
-            throw error;
-        }
-    },
-
-    /**
-     * مساعدات المصادقة (Authentication Helpers)
+     * مساعدات المصادقة (Authentication Helpers) — Supabase Auth
      */
     isLoggedIn: function () {
-        return localStorage.getItem('navito_token') !== null;
+        // Check localStorage for Supabase session token
+        const session = localStorage.getItem('navito_session');
+        return !!session;
     },
 
     isAdmin: function () {
@@ -46,53 +19,178 @@ const Utils = {
         return user.role === 'admin';
     },
 
-    logout: function (redirectUrl = 'index.html') {
+    getSession: async function () {
+        const { data: { session } } = await window.supabase.auth.getSession();
+        return session;
+    },
+
+    logout: async function (redirectUrl = 'index.html') {
+        await window.supabase.auth.signOut();
         localStorage.removeItem('navito_current_user');
-        localStorage.removeItem('navito_token');
+        localStorage.removeItem('navito_session');
         window.location.href = redirectUrl;
     },
 
     login: async function (email, password) {
-        try {
-            const data = await this.apiFetch('/auth/login', {
-                method: 'POST',
-                body: JSON.stringify({ email, password })
-            });
-            if (data.token) {
-                localStorage.setItem('navito_token', data.token);
-                localStorage.setItem('navito_current_user', JSON.stringify(data));
-                return data;
-            }
-        } catch (error) {
-            throw error;
-        }
+        const { data, error } = await window.supabase.auth.signInWithPassword({ email, password });
+        if (error) throw new Error(error.message);
+
+        // Fetch profile from DB
+        const { data: profile } = await window.supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', data.user.id)
+            .single();
+
+        const userData = {
+            id: data.user.id,
+            email: data.user.email,
+            fullname: profile?.fullname || data.user.user_metadata?.fullname || '',
+            phone: profile?.phone || '',
+            role: profile?.role || 'user'
+        };
+
+        localStorage.setItem('navito_session', JSON.stringify(data.session));
+        localStorage.setItem('navito_current_user', JSON.stringify(userData));
+        return userData;
     },
 
     register: async function (userData) {
-        try {
-            const data = await this.apiFetch('/auth/register', {
-                method: 'POST',
-                body: JSON.stringify(userData)
-            });
-            if (data.token) {
-                localStorage.setItem('navito_token', data.token);
-                localStorage.setItem('navito_current_user', JSON.stringify(data));
-                return data;
+        const { fullname, email, password, phone } = userData;
+
+        const { data, error } = await window.supabase.auth.signUp({
+            email,
+            password,
+            options: {
+                data: { fullname, phone }
             }
-        } catch (error) {
-            throw error;
+        });
+
+        if (error) throw new Error(error.message);
+
+        // Profile is auto-created by Supabase trigger on auth.users insert
+        const user = {
+            id: data.user.id,
+            email: data.user.email,
+            fullname,
+            phone,
+            role: 'user'
+        };
+
+        if (data.session) {
+            localStorage.setItem('navito_session', JSON.stringify(data.session));
+            localStorage.setItem('navito_current_user', JSON.stringify(user));
         }
+
+        return user;
     },
 
+    /**
+     * جلب المنتجات (Products)
+     */
+    getProducts: async function () {
+        const { data, error } = await window.supabase
+            .from('products')
+            .select('*')
+            .eq('is_active', true)
+            .order('created_at', { ascending: false });
+
+        if (error) throw new Error(error.message);
+        return data || [];
+    },
+
+    getProductById: async function (id) {
+        const { data, error } = await window.supabase
+            .from('products')
+            .select('*')
+            .eq('id', id)
+            .single();
+
+        if (error) throw new Error(error.message);
+        return data;
+    },
+
+    /**
+     * إدارة المنتجات — للأدمن فقط (Admin Product Management)
+     */
+    createProduct: async function (productData) {
+        const { data, error } = await window.supabase
+            .from('products')
+            .insert([productData])
+            .select()
+            .single();
+        if (error) throw new Error(error.message);
+        return data;
+    },
+
+    updateProduct: async function (id, productData) {
+        const { data, error } = await window.supabase
+            .from('products')
+            .update(productData)
+            .eq('id', id)
+            .select()
+            .single();
+        if (error) throw new Error(error.message);
+        return data;
+    },
+
+    deleteProduct: async function (id) {
+        const { error } = await window.supabase
+            .from('products')
+            .delete()
+            .eq('id', id);
+        if (error) throw new Error(error.message);
+        return true;
+    },
+
+    /**
+     * الطلبات (Orders)
+     */
     createOrder: async function (orderData) {
-        try {
-            return await this.apiFetch('/orders', {
-                method: 'POST',
-                body: JSON.stringify(orderData)
-            });
-        } catch (error) {
-            throw error;
-        }
+        const session = await this.getSession();
+        if (!session) throw new Error('يجب تسجيل الدخول أولاً');
+
+        const payload = {
+            user_id: session.user.id,
+            items: orderData.orderItems,
+            total_amount: orderData.totalAmount,
+            shipping_address: orderData.shippingAddress,
+            payment_method: orderData.paymentMethod || 'Cash on Delivery',
+            payment_status: 'Pending',
+            status: 'Pending'
+        };
+
+        const { data, error } = await window.supabase
+            .from('orders')
+            .insert([payload])
+            .select()
+            .single();
+
+        if (error) throw new Error(error.message);
+        return data;
+    },
+
+    getMyOrders: async function () {
+        const session = await this.getSession();
+        if (!session) return [];
+
+        const { data, error } = await window.supabase
+            .from('orders')
+            .select('*')
+            .eq('user_id', session.user.id)
+            .order('created_at', { ascending: false });
+
+        if (error) throw new Error(error.message);
+        return data || [];
+    },
+
+    getAllOrders: async function () {
+        const { data, error } = await window.supabase
+            .from('orders')
+            .select('*, profiles(fullname, email)')
+            .order('created_at', { ascending: false });
+        if (error) throw new Error(error.message);
+        return data || [];
     },
 
     /**
@@ -107,7 +205,7 @@ const Utils = {
     },
 
     /**
-     * مساعدات السمات (ليلي/نهاري) (Theme Helpers)
+     * مساعدات السمات (Theme Helpers)
      */
     getTheme: function () {
         return localStorage.getItem('theme') || 'light';
@@ -150,6 +248,17 @@ const Utils = {
     },
 
     /**
+     * مساعد debounce
+     */
+    debounce: function (func, delay) {
+        let timeout;
+        return function (...args) {
+            clearTimeout(timeout);
+            timeout = setTimeout(() => func.apply(this, args), delay);
+        };
+    },
+
+    /**
      * مساعدات واجهة المستخدم (UI Helpers)
      */
     showToast: function (message, type = 'success') {
@@ -178,6 +287,21 @@ const Utils = {
         return `${currency} ${Number(amount).toFixed(2)}`;
     }
 };
+
+// ─── Supabase Auth State Listener ────────────────────────────────────────────
+// Keep localStorage in sync with Supabase session
+if (window.supabase) {
+    window.supabase.auth.onAuthStateChange(async (event, session) => {
+        if (event === 'SIGNED_IN' && session) {
+            localStorage.setItem('navito_session', JSON.stringify(session));
+        } else if (event === 'SIGNED_OUT') {
+            localStorage.removeItem('navito_session');
+            localStorage.removeItem('navito_current_user');
+        } else if (event === 'TOKEN_REFRESHED' && session) {
+            localStorage.setItem('navito_session', JSON.stringify(session));
+        }
+    });
+}
 
 // التصدير العام (Global Exposure)
 window.Utils = Utils;

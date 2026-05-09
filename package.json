@@ -1,25 +1,13 @@
 {
   "name": "navito",
-  "version": "1.0.0",
-  "description": "",
+  "version": "2.0.0",
+  "description": "NAVITO — Pure frontend e-commerce powered by Supabase",
   "main": "index.js",
   "scripts": {
-    "start": "node server/index.js",
-    "dev": "nodemon server/index.js",
-    "seed": "node server/seeder.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Static site — deploy via Netlify\" && exit 0"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "commonjs",
-  "dependencies": {
-    "cors": "^2.8.5",
-    "dotenv": "^17.2.3",
-    "express": "^5.2.1",
-    "jsonwebtoken": "^9.0.3",
-    "mongoose": "^9.0.1",
-    "morgan": "^1.10.1",
-    "nedb-promises": "^6.2.3"
-  }
+  "type": "commonjs"
 }

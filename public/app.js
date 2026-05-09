@@ -390,8 +390,9 @@ window.NAVITO = {
             NAVITO.Init.events();
 
             // المزامنة في الوقت الفعلي عند تغيير المنتجات في تبويب آخر
+            // Re-fetch when Supabase session changes in another tab
             window.addEventListener('storage', async (e) => {
-                if (e.key === 'admin_products_prod_v1') {
+                if (e.key === 'navito_session' || e.key === 'admin_products_prod_v1') {
                     NAVITO.State.products = await getLocalStoreProducts();
                     NAVITO.Logic.applyFilters('', NAVITO.State.currentCategory);
                 }
@@ -417,15 +418,25 @@ window.allStoreProducts = NAVITO.State.products;
 // ─────────────────────────────────────────────
 async function getLocalStoreProducts() {
     try {
-        if (typeof Utils !== 'undefined' && Utils.apiFetch) {
-            const products = await Utils.apiFetch('/products');
-            window.allStoreProducts = products;
-            return products;
+        // Load products from Supabase
+        if (typeof Utils !== 'undefined' && Utils.getProducts) {
+            const products = await Utils.getProducts();
+            // Normalize field names (Supabase uses snake_case)
+            const normalized = products.map(p => ({
+                ...p,
+                _id: p.id,
+                nameEn: p.name_en || p.nameEn,
+                descriptionEn: p.description_en || p.descriptionEn,
+                isActive: p.is_active !== undefined ? p.is_active : true
+            }));
+            window.allStoreProducts = normalized;
+            return normalized;
         }
     } catch (e) {
-        console.warn('[NAVITO] فشل تحميل المنتجات من الخادم، العودة للتخزين المحلي', e);
+        console.warn('[NAVITO] فشل تحميل المنتجات من Supabase، العودة للتخزين المحلي', e);
         return JSON.parse(localStorage.getItem('admin_products_prod_v1') || '[]');
     }
+    return [];
 }
 window.getLocalStoreProducts = getLocalStoreProducts;
 
@@ -587,15 +598,15 @@ window.closeAccountModal = function () {
     }
 };
 
-window.handleLogout = function () {
+window.handleLogout = async function () {
     const lang = localStorage.getItem('navito_language') || 'ar';
     const msg = lang === 'en' ? 'Are you sure you want to logout?' : 'هل أنت متأكد من تسجيل الخروج؟';
     if (confirm(msg)) {
         if (typeof Utils !== 'undefined' && Utils.logout) {
-            Utils.logout();
+            await Utils.logout();
         } else {
             localStorage.removeItem('navito_current_user');
-            localStorage.removeItem('navito_logged_in');
+            localStorage.removeItem('navito_session');
             window.location.reload();
         }
     }

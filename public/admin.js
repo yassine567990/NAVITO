@@ -24,35 +24,59 @@ const INITIAL_MOCK_ORDERS = [];
 
 async function fetchProducts() {
     try {
-        if (typeof Utils !== 'undefined' && Utils.apiFetch) {
-            const products = await Utils.apiFetch('/products');
-            window.allStoreProducts = products;
-            renderAdminProductsTable(products);
-            updateDashboardStats(products);
-            return products;
-        }
+        const products = await Utils.getProducts();
+        // Normalize Supabase snake_case to camelCase
+        const normalized = products.map(p => ({
+            ...p,
+            _id: p.id,
+            nameEn: p.name_en || p.nameEn,
+            descriptionEn: p.description_en || p.descriptionEn,
+            isActive: p.is_active !== undefined ? p.is_active : true
+        }));
+        window.allStoreProducts = normalized;
+        renderAdminProductsTable(normalized);
+        updateDashboardStats(normalized);
+        return normalized;
     } catch (error) {
-        console.error('Error fetching products:', error);
+        console.error('Error fetching products from Supabase:', error);
         showToast(t('load_failed'), 'error');
     }
 }
 
 async function saveProductToCloud(product) {
     try {
-        const method = product._id ? 'PUT' : 'POST';
-        const endpoint = product._id ? `/products/${product._id}` : '/products';
-        
-        await Utils.apiFetch(endpoint, {
-            method,
-            body: JSON.stringify(product)
-        });
+        // Normalize camelCase to snake_case for Supabase
+        const payload = {
+            name: product.name,
+            name_en: product.nameEn || product.name_en,
+            category: product.category,
+            price: product.price,
+            image: product.image,
+            images: product.images || [],
+            description: product.description,
+            description_en: product.descriptionEn || product.description_en,
+            stock: product.stock || 0,
+            rating: product.rating || 4.5,
+            reviews: product.review_count || product.reviews || 0,
+            is_active: true
+        };
+
+        // Use id (uuid) if editing, undefined if new
+        const existingId = product._id && !product._id.toString().startsWith('NaN') ? product._id : null;
+        if (existingId && existingId !== product.id) {
+            await Utils.updateProduct(existingId, payload);
+        } else if (product.id && typeof product.id === 'string' && product.id.length > 10) {
+            await Utils.updateProduct(product.id, payload);
+        } else {
+            await Utils.createProduct(payload);
+        }
 
         await fetchProducts();
         showToast(t('product_saved'), 'success');
         closeModal();
         return true;
     } catch (error) {
-        console.error("Error saving product:", error);
+        console.error('Error saving product to Supabase:', error);
         showToast(t('save_error'), 'error');
         return false;
     }
@@ -60,14 +84,12 @@ async function saveProductToCloud(product) {
 
 async function deleteProductFromCloud(productId) {
     try {
-        await Utils.apiFetch(`/products/${productId}`, {
-            method: 'DELETE'
-        });
+        await Utils.deleteProduct(productId);
         await fetchProducts();
         showToast(t('product_deleted'), 'success');
         return true;
     } catch (error) {
-        console.error("Error deleting product:", error);
+        console.error('Error deleting product from Supabase:', error);
         showToast(t('delete_failed'), 'error');
         return false;
     }
@@ -77,21 +99,40 @@ let previousOrdersCount = -1;
 
 async function fetchOrders() {
     try {
-        const orders = await Utils.apiFetch('/orders');
-        
-        // التحقق من وجود طلبيات جديدة
-        if (previousOrdersCount !== -1 && orders.length > previousOrdersCount) {
-            const newCount = orders.length - previousOrdersCount;
+        const orders = await Utils.getAllOrders();
+
+        // Normalize Supabase fields for the existing render logic
+        const normalized = orders.map(o => ({
+            ...o,
+            _id: o.id,
+            orderNumber: o.order_id,
+            customerName: o.profiles?.fullname || o.shipping_address?.fullname || 'N/A',
+            customerEmail: o.profiles?.email || 'N/A',
+            customerPhone: o.shipping_address?.phone || 'N/A',
+            shippingAddress: o.shipping_address?.address || 'N/A',
+            postalCode: o.shipping_address?.postal || '',
+            total: o.total_amount,
+            subtotal: o.total_amount,
+            shipping: 0,
+            items: Array.isArray(o.items) ? o.items : [],
+            orderDate: o.created_at,
+            date: o.created_at,
+            status: (o.status || 'pending').toLowerCase()
+        }));
+
+        // Check for new orders notification
+        if (previousOrdersCount !== -1 && normalized.length > previousOrdersCount) {
+            const newCount = normalized.length - previousOrdersCount;
             showNewOrderNotification(newCount);
         }
-        previousOrdersCount = orders.length;
+        previousOrdersCount = normalized.length;
 
-        window.currentOrders = orders;
-        renderOrdersTable(orders);
+        window.currentOrders = normalized;
+        renderOrdersTable(normalized);
         updateDashboardStats(window.allStoreProducts || []);
-        return orders;
+        return normalized;
     } catch (error) {
-        console.error('Error fetching orders:', error);
+        console.error('Error fetching orders from Supabase:', error);
     }
 }
 
