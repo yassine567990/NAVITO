@@ -7,7 +7,7 @@
 
 // Auth Guard and Logout are handled by Utils (linked in HTML)
 window.adminLogout = function () {
-    Utils.logout('admin-login.html');
+    Utils.logout('/admin-login');
 };
 
 const ADMIN_API_URL = '/api/products';
@@ -386,7 +386,7 @@ function renderAdminProductsTable(products) {
             clearBtn.style.marginInlineStart = '15px';
             clearBtn.style.fontSize = '0.8rem';
             clearBtn.innerHTML = t('show_all');
-            clearBtn.onclick = () => window.location.href = 'products.html';
+            clearBtn.onclick = () => window.location.href = '/products';
             header.appendChild(clearBtn);
         }
     }

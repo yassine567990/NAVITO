@@ -14,7 +14,7 @@
         (function () {
             const currentUser = localStorage.getItem('navito_current_user');
             if (!currentUser) {
-                window.location.href = 'login.html';
+                window.location.href = '/login';
                 return;
             }
             const savedTheme = localStorage.getItem('theme') || 'light';
@@ -343,7 +343,7 @@
     <!-- Header -->
     <header>
         <div class="logo">
-            <a href="index.html">
+            <a href="/">
                 <h1>NAVITO</h1>
             </a>
         </div>
@@ -361,7 +361,7 @@
                 <span id="theme-text" data-i18n="dark_mode">الوضع الليلي</span>
             </div>
 
-            <div class="nav-item-luxury" onclick="window.location.href='index.html'">
+            <div class="nav-item-luxury" onclick="window.location.href='/'">
                 <div class="icon-display">🏠</div>
                 <span data-i18n="home">الرئيسية</span>
             </div>

@@ -156,13 +156,13 @@ window.NAVITO = {
         buyNow: function (id) {
             if (typeof Utils !== 'undefined' && !Utils.isLoggedIn()) {
                 if (typeof showToast === 'function') showToast(t('please_login'), 'warning');
-                window.location.href = 'login.html';
+                window.location.href = '/login';
                 return;
             }
             const product = NAVITO.State.products.find(p => p._id == id || p.id == id);
             if (product && typeof CartManager !== 'undefined') {
                 CartManager.addItem(product, null, 1);
-                window.location.href = 'checkout.html';
+                window.location.href = '/checkout';
             }
         },
         // الفلترة حسب التصنيف
@@ -449,7 +449,7 @@ window.startCartCheckout = function () {
         if (typeof showToast === 'function') showToast(typeof t === 'function' ? t('cart_empty') : 'سلتك فارغة', 'error');
         return;
     }
-    window.location.href = 'checkout.html';
+    window.location.href = '/checkout';
 };
 
 window.renderCheckoutPage = function () {
@@ -457,7 +457,7 @@ window.renderCheckoutPage = function () {
     if (!container) return;
     const items = CartManager.items;
     if (items.length === 0) {
-        window.location.href = 'index.html';
+        window.location.href = '/';
         return;
     }
     const currency = typeof t === 'function' ? t('currency') : 'MAD';
@@ -512,7 +512,7 @@ window.handleCheckout = async function (e) {
     // التحقق من تسجيل الدخول
     if (typeof Utils !== 'undefined' && !Utils.isLoggedIn()) {
         if (typeof showToast === 'function') showToast(typeof t === 'function' ? t('please_login') : 'يرجى تسجيل الدخول أولاً', 'error');
-        setTimeout(() => window.location.href = 'login.html', 1500);
+        setTimeout(() => window.location.href = '/login', 1500);
         return;
     }
 
@@ -551,7 +551,7 @@ window.handleCheckout = async function (e) {
                 const msg = (typeof t === 'function' ? t('order_success_msg') : 'تم تسجيل طلبك بنجاح! رقم الطلب: ') + result.orderId;
                 showToast(msg, 'success');
             }
-            setTimeout(() => window.location.href = 'index.html', 3000);
+            setTimeout(() => window.location.href = '/', 3000);
         }
     } catch (error) {
         if (typeof showToast === 'function') showToast(error.message || 'حدث خطأ أثناء معالجة الطلب', 'error');
@@ -586,7 +586,7 @@ window.handleAccountClick = function () {
             document.body.style.overflow = 'hidden';
         }
     } else {
-        window.location.href = 'login.html';
+        window.location.href = '/login';
     }
 };
 

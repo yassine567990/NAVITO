@@ -24,7 +24,7 @@ const Utils = {
         return session;
     },
 
-    logout: async function (redirectUrl = 'index.html') {
+    logout: async function (redirectUrl = '/') {
         await window.supabase.auth.signOut();
         localStorage.removeItem('navito_current_user');
         localStorage.removeItem('navito_session');

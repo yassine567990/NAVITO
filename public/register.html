@@ -135,7 +135,7 @@
                     <span id="theme-icon">☀️</span>
                 </button>
             </div>
-            <a href="index.html"
+            <a href="/"
                 style="position: absolute; top: 20px; right: 20px; color: var(--text-secondary); font-size: 0.9rem; text-decoration:none;"
                 title="عودة للرئيسية">✕</a>
             <div class="auth-header">
@@ -169,7 +169,7 @@
                 <button type="submit" class="auth-btn">إنشاء الحساب</button>
             </form>
             <div class="auth-footer">
-                لديك حساب بالفعل؟ <a href="login.html" class="auth-link">تسجيل الدخول</a>
+                لديك حساب بالفعل؟ <a href="/login" class="auth-link">تسجيل الدخول</a>
             </div>
         </div>
     </div>
@@ -229,7 +229,7 @@
                     await Utils.register({ fullname, email, phone, password });
                     showToast('تم إنشاء الحساب بنجاح!', 'success');
                     setTimeout(() => {
-                        window.location.href = 'index.html';
+                        window.location.href = '/';
                     }, 1500);
                 }
             } catch (error) {

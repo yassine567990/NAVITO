@@ -12,7 +12,7 @@ function openProductModal(productId) {
     // 1. Check if logged in (per user requirements in app.js)
     if (!Utils.isLoggedIn()) {
         alert(t('please_login'));
-        window.location.href = 'login.html';
+        window.location.href = '/login';
         return;
     }
 

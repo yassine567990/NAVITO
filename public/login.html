@@ -165,7 +165,7 @@
                     <span id="theme-icon">☀️</span>
                 </button>
             </div>
-            <a href="index.html" class="back-home" title="عودة للرئيسية">✕</a>
+            <a href="/" class="back-home" title="عودة للرئيسية">✕</a>
             <div class="auth-header">
                 <h2>مرحباً بعودتك</h2>
                 <p style="color: var(--text-secondary);">سجل دخولك للمتابعة</p>
@@ -190,7 +190,7 @@
                 <button type="submit" class="auth-btn">تسجيل الدخول</button>
             </form>
             <div class="auth-footer">
-                ليس لديك حساب؟ <a href="register.html" class="auth-link">إنشاء حساب جديد</a>
+                ليس لديك حساب؟ <a href="/register" class="auth-link">إنشاء حساب جديد</a>
             </div>
         </div>
     </div>
@@ -237,7 +237,7 @@
                     const user = await Utils.login(email, password);
                     showToast('مرحباً ' + user.fullname, 'success');
                     setTimeout(() => {
-                        window.location.href = 'index.html';
+                        window.location.href = '/';
                     }, 1000);
                 }
             } catch (error) {
