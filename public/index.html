@@ -38,23 +38,7 @@
 
 <body>
 
-    <!-- الشريط العلوي -->
-    <div class="top-bar">
-        <div class="container top-bar-container">
-            <div class="top-bar-left">
-                <span id="welcome-text-guest" data-i18n="welcome_back">مرحباً بكم في Navito</span>
-                <span id="welcome-text-user" style="display: none;"></span>
-            </div>
-            <div class="top-bar-right">
-                <div class="country-switcher" id="country-toggle-top" style="display: inline-flex; align-items: center; gap: 8px; cursor: pointer; margin-inline-end: 15px; font-weight: 600;">
-                    <i class="fas fa-map-marker-alt" style="font-size: 0.9rem; color: var(--luxury-gold);"></i>
-                    <span id="country-text">المغرب 🇲🇦</span>
-                </div>
-                <a href="#" class="top-bar-link"><span data-i18n="download_app">تحميل التطبيق</span></a>
-                <a href="#" class="top-bar-link"><span data-i18n="help">المساعدة</span></a>
-            </div>
-        </div>
-    </div>
+
 
 
     <!-- شريط الإعلانات المتحرك (ميزة إضافية) -->
@@ -118,9 +102,7 @@
     <main>
         <!-- قسم البطولة (Hero Section) -->
         <section class="hero">
-            <div class="social-proof-float">
-                <i class="fas fa-eye"></i> <span data-i18n="social_proof_watching">24 شخص يشاهدون المنتج الآن</span>
-            </div>
+
             <div class="container glass-hero">
                 <span class="hero-label" data-i18n="limited_offer" style="color: var(--luxury-gold);"></span>
                 <h1 class="hero-title" data-i18n="hero_title"></h1>
@@ -586,21 +568,7 @@
             });
         }
 
-        // عداد الإثبات الاجتماعي المباشر (تحديث عشوائي كل 10-20 ثانية)
-        function initSocialProof() {
-            const el = document.querySelector('.social-proof-float span');
-            if (!el) return;
-            const update = () => {
-                const count = Math.floor(Math.random() * 30) + 10;
-                const lang = localStorage.getItem('navito_language') || 'ar';
-                const coloredCount = `<span style="color: #ff4d4d; font-weight: 800;">${count}</span>`;
-                el.innerHTML = lang === 'en'
-                    ? `${coloredCount} people are watching this now`
-                    : `${coloredCount} شخص يشاهدون المنتج الآن`;
-            };
-            update();
-            setInterval(update, 12000);
-        }
+
 
         document.addEventListener('DOMContentLoaded', () => {
             startCountdown(8 * 3600 + 14 * 60 + 32);
@@ -613,7 +581,7 @@
             }
 
             initScrollAnimations();
-            initSocialProof();
+
 
             // مزامنة شارة العربة للهاتف عند التحميل
             const syncMobileBadge = () => {
