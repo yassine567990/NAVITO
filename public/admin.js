@@ -24,44 +24,58 @@ const INITIAL_MOCK_ORDERS = [];
 
 async function fetchProducts() {
     try {
-        const products = await Utils.getProducts();
+        const cloudProducts = await Utils.getProducts();
+        
         // Normalize Supabase snake_case to camelCase
-        const normalized = products.map(p => ({
+        const normalizedCloud = cloudProducts.map(p => ({
             ...p,
             _id: p.id,
             nameEn: p.name_en || p.nameEn,
             descriptionEn: p.description_en || p.descriptionEn,
             isActive: p.is_active !== undefined ? p.is_active : true
         }));
-        window.allStoreProducts = normalized;
-        renderAdminProductsTable(normalized);
-        updateDashboardStats(normalized);
-        return normalized;
+
+        // Get Local Fallback Products
+        const localProducts = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+        
+        // Merge - Cloud products take precedence
+        const cloudIds = new Set(normalizedCloud.map(p => String(p.id)));
+        const combined = [
+            ...normalizedCloud,
+            ...localProducts.filter(p => !cloudIds.has(String(p.id)) && !cloudIds.has(String(p._id)))
+        ];
+
+        window.allStoreProducts = combined;
+        renderAdminProductsTable(combined);
+        updateDashboardStats(combined);
+        return combined;
     } catch (error) {
-        console.error('Error fetching products from Supabase:', error);
-        showToast(t('load_failed'), 'error');
+        console.error('Fetch error (falling back to local):', error);
+        const localProducts = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+        window.allStoreProducts = localProducts;
+        renderAdminProductsTable(localProducts);
+        updateDashboardStats(localProducts);
+        return localProducts;
     }
 }
 
 async function saveProductToCloud(product) {
-    try {
-        // Normalize camelCase to snake_case for Supabase
-        const payload = {
-            name: product.name,
-            name_en: product.nameEn || product.name_en,
-            category: product.category,
-            price: product.price,
-            image: product.image,
-            images: product.images || [],
-            description: product.description,
-            description_en: product.descriptionEn || product.description_en,
-            stock: product.stock || 0,
-            rating: product.rating || 4.5,
-            reviews: product.review_count || product.reviews || 0,
-            is_active: true
-        };
+    const payload = {
+        name: product.name,
+        name_en: product.nameEn || product.name_en,
+        category: product.category,
+        price: product.price,
+        image: product.image,
+        images: product.images || [],
+        description: product.description,
+        description_en: product.descriptionEn || product.description_en,
+        stock: product.stock || 0,
+        rating: product.rating || 4.5,
+        reviews: product.review_count || product.reviews || 0,
+        is_active: true
+    };
 
-        // Use id (uuid) if editing, undefined if new
+    try {
         const existingId = product._id && !product._id.toString().startsWith('NaN') ? product._id : null;
         if (existingId && existingId !== product.id) {
             await Utils.updateProduct(existingId, payload);
@@ -76,9 +90,35 @@ async function saveProductToCloud(product) {
         closeModal();
         return true;
     } catch (error) {
-        console.error('Error saving product to Supabase:', error);
-        showToast(t('save_error'), 'error');
-        return false;
+        console.warn('Supabase save failed, falling back to local storage:', error);
+        
+        // Local Fallback Logic
+        let localProducts = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+        const id = product.id || product._id || `local_${Date.now()}`;
+        
+        const existingIndex = localProducts.findIndex(p => String(p.id) === String(id) || String(p._id) === String(id));
+        
+        const localProduct = {
+            ...product,
+            id: id,
+            _id: id,
+            ...payload, // Ensure it has all fields
+            lastUpdated: new Date().toISOString(),
+            isLocal: true
+        };
+
+        if (existingIndex > -1) {
+            localProducts[existingIndex] = localProduct;
+        } else {
+            localProducts.push(localProduct);
+        }
+
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(localProducts));
+        await fetchProducts();
+        
+        showToast(t('product_saved') + ' (Local)', 'success');
+        closeModal();
+        return true;
     }
 }
 
@@ -89,7 +129,18 @@ async function deleteProductFromCloud(productId) {
         showToast(t('product_deleted'), 'success');
         return true;
     } catch (error) {
-        console.error('Error deleting product from Supabase:', error);
+        console.warn('Supabase delete failed or not found, checking local:', error);
+        
+        let localProducts = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+        const filtered = localProducts.filter(p => String(p.id) !== String(productId) && String(p._id) !== String(productId));
+        
+        if (filtered.length !== localProducts.length) {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
+            await fetchProducts();
+            showToast(t('product_deleted'), 'success');
+            return true;
+        }
+
         showToast(t('delete_failed'), 'error');
         return false;
     }
@@ -292,7 +343,7 @@ window.closeModal = closeModal;
 window.showToast = showToast;
 
 // Sample Data Generator
-function generateSampleProducts() {
+async function generateSampleProducts() {
     const sampleProducts = [
         {
             _id: "prod_001",
@@ -351,9 +402,28 @@ function generateSampleProducts() {
         }
     ];
 
-    saveLocalProducts(sampleProducts);
-    fetchProducts();
-    showToast(t('sample_created'), 'success');
+    try {
+        const loader = document.getElementById('admin-loader');
+        if (loader) loader.style.display = 'block';
+        
+        for (const product of sampleProducts) {
+            // Remove _id so Supabase generates a valid UUID
+            const { _id, ...productWithoutId } = product;
+            // Adapt for saveProductToCloud format
+            await saveProductToCloud({
+                ...productWithoutId,
+                images: []
+            });
+        }
+        await fetchProducts();
+        showToast(t('sample_created') || 'تم إنشاء المنتجات التجريبية', 'success');
+    } catch (e) {
+        console.error(e);
+        showToast('حدث خطأ أثناء الإنشاء (تأكد من إعدادات Supabase RLS)', 'error');
+    } finally {
+        const loader = document.getElementById('admin-loader');
+        if (loader) loader.style.display = 'none';
+    }
 }
 window.generateSampleProducts = generateSampleProducts;
 
@@ -386,7 +456,7 @@ function renderAdminProductsTable(products) {
             clearBtn.style.marginInlineStart = '15px';
             clearBtn.style.fontSize = '0.8rem';
             clearBtn.innerHTML = t('show_all');
-            clearBtn.onclick = () => window.location.href = '/products';
+            clearBtn.onclick = () => window.location.href = 'products.html';
             header.appendChild(clearBtn);
         }
     }
@@ -520,6 +590,7 @@ function updateDashboardStats(products) {
         return sum + (order.items ? order.items.reduce((acc, item) => acc + (item.quantity || 1), 0) : 0);
     }, 0);
 
+    const elRev = document.getElementById('stat-total-revenue');
     if (elRev) elRev.textContent = Utils.formatCurrency(totalRevenue);
 
     const elSales = document.getElementById('stat-total-sales');
@@ -778,8 +849,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const review_count = parseInt(document.getElementById('review_count').value) || 0;
 
             const productData = {
-                id: id || Date.now(), // Generate ID if new
-                _id: id || Date.now(),
+                id: id || null, // Let Supabase generate UUID
+                _id: id || null,
                 name,
                 nameEn,
                 price,

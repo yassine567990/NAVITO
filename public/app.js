@@ -156,13 +156,13 @@ window.NAVITO = {
         buyNow: function (id) {
             if (typeof Utils !== 'undefined' && !Utils.isLoggedIn()) {
                 if (typeof showToast === 'function') showToast(t('please_login'), 'warning');
-                window.location.href = '/login';
+                window.location.href = 'login.html';
                 return;
             }
             const product = NAVITO.State.products.find(p => p._id == id || p.id == id);
             if (product && typeof CartManager !== 'undefined') {
                 CartManager.addItem(product, null, 1);
-                window.location.href = '/checkout';
+                window.location.href = 'checkout.html';
             }
         },
         // الفلترة حسب التصنيف
@@ -417,26 +417,37 @@ window.allStoreProducts = NAVITO.State.products;
 // الوصول إلى بيانات المنتجات من الخادم
 // ─────────────────────────────────────────────
 async function getLocalStoreProducts() {
+    let cloudProducts = [];
     try {
         // Load products from Supabase
         if (typeof Utils !== 'undefined' && Utils.getProducts) {
-            const products = await Utils.getProducts();
-            // Normalize field names (Supabase uses snake_case)
-            const normalized = products.map(p => ({
-                ...p,
-                _id: p.id,
-                nameEn: p.name_en || p.nameEn,
-                descriptionEn: p.description_en || p.descriptionEn,
-                isActive: p.is_active !== undefined ? p.is_active : true
-            }));
-            window.allStoreProducts = normalized;
-            return normalized;
+            cloudProducts = await Utils.getProducts();
         }
     } catch (e) {
-        console.warn('[NAVITO] فشل تحميل المنتجات من Supabase، العودة للتخزين المحلي', e);
-        return JSON.parse(localStorage.getItem('admin_products_prod_v1') || '[]');
+        console.warn('[NAVITO] فشل جلب المنتجات من السحابة:', e);
     }
-    return [];
+
+    // Get Local Products
+    const localProducts = JSON.parse(localStorage.getItem('admin_products_prod_v1') || '[]');
+    
+    // Normalize Cloud Products (Supabase uses snake_case)
+    const normalizedCloud = cloudProducts.map(p => ({
+        ...p,
+        _id: p.id,
+        nameEn: p.name_en || p.nameEn,
+        descriptionEn: p.description_en || p.descriptionEn,
+        isActive: p.is_active !== undefined ? p.is_active : true
+    }));
+
+    // Merge: Cloud products take precedence. Filter out local duplicates.
+    const cloudIds = new Set(normalizedCloud.map(p => String(p.id)));
+    const combined = [
+        ...normalizedCloud,
+        ...localProducts.filter(p => !cloudIds.has(String(p.id)) && !cloudIds.has(String(p._id)))
+    ];
+
+    window.allStoreProducts = combined;
+    return combined;
 }
 window.getLocalStoreProducts = getLocalStoreProducts;
 
@@ -449,7 +460,7 @@ window.startCartCheckout = function () {
         if (typeof showToast === 'function') showToast(typeof t === 'function' ? t('cart_empty') : 'سلتك فارغة', 'error');
         return;
     }
-    window.location.href = '/checkout';
+    window.location.href = 'checkout.html';
 };
 
 window.renderCheckoutPage = function () {
@@ -457,7 +468,7 @@ window.renderCheckoutPage = function () {
     if (!container) return;
     const items = CartManager.items;
     if (items.length === 0) {
-        window.location.href = '/';
+        window.location.href = 'index.html';
         return;
     }
     const currency = typeof t === 'function' ? t('currency') : 'MAD';
@@ -512,7 +523,7 @@ window.handleCheckout = async function (e) {
     // التحقق من تسجيل الدخول
     if (typeof Utils !== 'undefined' && !Utils.isLoggedIn()) {
         if (typeof showToast === 'function') showToast(typeof t === 'function' ? t('please_login') : 'يرجى تسجيل الدخول أولاً', 'error');
-        setTimeout(() => window.location.href = '/login', 1500);
+        setTimeout(() => window.location.href = 'login.html', 1500);
         return;
     }
 
@@ -551,7 +562,7 @@ window.handleCheckout = async function (e) {
                 const msg = (typeof t === 'function' ? t('order_success_msg') : 'تم تسجيل طلبك بنجاح! رقم الطلب: ') + result.orderId;
                 showToast(msg, 'success');
             }
-            setTimeout(() => window.location.href = '/', 3000);
+            setTimeout(() => window.location.href = 'index.html', 3000);
         }
     } catch (error) {
         if (typeof showToast === 'function') showToast(error.message || 'حدث خطأ أثناء معالجة الطلب', 'error');
@@ -586,7 +597,7 @@ window.handleAccountClick = function () {
             document.body.style.overflow = 'hidden';
         }
     } else {
-        window.location.href = '/login';
+        window.location.href = 'login.html';
     }
 };
 

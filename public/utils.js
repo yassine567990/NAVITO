@@ -35,12 +35,12 @@ const Utils = {
         const { data, error } = await window.supabase.auth.signInWithPassword({ email, password });
         if (error) throw new Error(error.message);
 
-        // Fetch profile from DB
+        // Fetch profile from DB (handle missing profile gracefully)
         const { data: profile } = await window.supabase
             .from('profiles')
             .select('*')
             .eq('id', data.user.id)
-            .single();
+            .maybeSingle();
 
         const userData = {
             id: data.user.id,
@@ -83,6 +83,30 @@ const Utils = {
         }
 
         return user;
+    },
+
+    resetPassword: async function (email) {
+        // Construct the redirect URL dynamically based on current path
+        const currentPath = window.location.pathname;
+        const redirectPath = currentPath.substring(0, currentPath.lastIndexOf('/') + 1) + 'reset-password.html';
+        const redirectTo = window.location.origin + redirectPath;
+
+        const { data, error } = await window.supabase.auth.resetPasswordForEmail(email, {
+            redirectTo: redirectTo,
+        });
+        if (error) throw new Error(error.message);
+        return data;
+    },
+
+    loginWithGoogle: async function () {
+        const { data, error } = await window.supabase.auth.signInWithOAuth({
+            provider: 'google',
+            options: {
+                redirectTo: window.location.origin + (window.location.pathname.includes('/public/') ? '/public/index.html' : '/index.html')
+            }
+        });
+        if (error) throw new Error(error.message);
+        return data;
     },
 
     /**
