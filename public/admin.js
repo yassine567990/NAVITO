@@ -6,8 +6,17 @@
 // Initialized
 
 // Auth Guard and Logout are handled by Utils (linked in HTML)
+// Auth Guard - Redirect if not admin
+(function() {
+    const isAdmin = localStorage.getItem('admin_token') === 'demo_token_v1' || (typeof Utils !== 'undefined' && Utils.isAdmin());
+    if (!isAdmin) {
+        window.location.href = 'login.html';
+    }
+})();
+
 window.adminLogout = function () {
-    Utils.logout('/admin-login');
+    localStorage.removeItem('admin_token');
+    Utils.logout('login.html');
 };
 
 const ADMIN_API_URL = '/api/products';
