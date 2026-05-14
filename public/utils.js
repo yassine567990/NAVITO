@@ -31,9 +31,32 @@ const Utils = {
         window.location.href = redirectUrl;
     },
 
+    // Initial Session Check
+    async init() {
+        const sessionStr = localStorage.getItem('navito_session');
+        if (sessionStr) {
+            try {
+                const session = JSON.parse(sessionStr);
+                // Optionally verify with Supabase if needed, but local storage is faster for UX
+                window.supabase.auth.setSession(session);
+            } catch (e) {
+                localStorage.removeItem('navito_session');
+            }
+        }
+    },
+
     login: async function (email, password) {
         const { data, error } = await window.supabase.auth.signInWithPassword({ email, password });
-        if (error) throw new Error(error.message);
+        
+        if (error) {
+            // Check for specific error "Email not confirmed"
+            if (error.message.includes('Email not confirmed')) {
+                const err = new Error(error.message);
+                err.code = 'email_not_confirmed';
+                throw err;
+            }
+            throw new Error(error.message);
+        }
 
         // Fetch profile from DB (handle missing profile gracefully)
         const { data: profile } = await window.supabase
@@ -55,6 +78,15 @@ const Utils = {
         return userData;
     },
 
+    resendConfirmationEmail: async function (email) {
+        const { data, error } = await window.supabase.auth.resend({
+            type: 'signup',
+            email: email,
+        });
+        if (error) throw new Error(error.message);
+        return data;
+    },
+
     register: async function (userData) {
         const { fullname, email, password, phone } = userData;
 
@@ -68,21 +100,22 @@ const Utils = {
 
         if (error) throw new Error(error.message);
 
-        // Profile is auto-created by Supabase trigger on auth.users insert
         const user = {
-            id: data.user.id,
-            email: data.user.email,
+            id: data.user?.id,
+            email: data.user?.email,
             fullname,
             phone,
             role: 'user'
         };
 
+        // Save user data to localStorage for immediate UI update
+        localStorage.setItem('navito_current_user', JSON.stringify(user));
+
         if (data.session) {
             localStorage.setItem('navito_session', JSON.stringify(data.session));
-            localStorage.setItem('navito_current_user', JSON.stringify(user));
         }
 
-        return user;
+        return { user, session: data.session };
     },
 
     resetPassword: async function (email) {

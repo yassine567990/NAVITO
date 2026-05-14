@@ -384,6 +384,11 @@ window.NAVITO = {
                 console.error('[NAVITO] فشل تحميل المنتجات الحقيقية:', e);
             }
             
+            // استعادة الجلسة إذا كانت موجودة
+            if (typeof Utils !== 'undefined' && Utils.init) {
+                await Utils.init();
+            }
+
             if (typeof CartManager !== 'undefined') CartManager.init();
             NAVITO.UI.updateAuth();
             NAVITO.Logic.applyFilters('', 'الكل');

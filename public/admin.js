@@ -7,7 +7,10 @@
 
 // Auth Guard and Logout are handled by Utils (linked in HTML)
 // Auth Guard - Redirect if not admin
-(function() {
+(async function() {
+    if (typeof Utils !== 'undefined' && Utils.init) {
+        await Utils.init();
+    }
     const isAdmin = localStorage.getItem('admin_token') === 'demo_token_v1' || (typeof Utils !== 'undefined' && Utils.isAdmin());
     if (!isAdmin) {
         window.location.href = 'login.html';
@@ -1095,14 +1098,14 @@ function renderOrders(orders) {
 
             // Take top 5 for dashboard
             tableContainer.innerHTML = orders.slice(0, 5).map(order => `
-    < tr >
-                    <td>${order.orderNumber}</td>
+                <tr>
+                    <td><span style="font-family: monospace; font-weight: 700;">${order.orderNumber}</span></td>
                     <td>${order.customerName}</td>
-                    <td>$${order.total.toFixed(2)}</td>
+                    <td>${new Date(order.orderDate).toLocaleDateString('en-GB')}</td>
+                    <td><span style="font-weight: 700; color: var(--accent-color);">$${order.total.toFixed(2)}</span></td>
                     <td><span class="status-badge ${statusClasses[order.status] || ''}">${statusLabels[order.status]}</span></td>
-                    <td>${new Date(order.orderDate).toLocaleDateString('en-US')}</td>
-                </tr >
-    `).join('');
+                </tr>
+            `).join('');
         }
     }
 
@@ -1429,6 +1432,24 @@ document.addEventListener('DOMContentLoaded', () => {
     if (typeof fetchOrders === 'function') {
         fetchOrders().then(() => {
             // initDashboard() will be called inside fetchOrders success or here after
+        });
+    }
+
+    // Sidebar Toggle Logic for Mobile
+    const sidebarToggle = document.getElementById('sidebar-toggle');
+    const sidebar = document.querySelector('.admin-sidebar');
+    
+    if (sidebarToggle && sidebar) {
+        sidebarToggle.addEventListener('click', (e) => {
+            e.stopPropagation();
+            sidebar.classList.toggle('active');
+        });
+
+        // Close sidebar when clicking outside
+        document.addEventListener('click', (e) => {
+            if (sidebar.classList.contains('active') && !sidebar.contains(e.target) && e.target !== sidebarToggle) {
+                sidebar.classList.remove('active');
+            }
         });
     }
 

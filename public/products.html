@@ -44,6 +44,7 @@
     <div class="admin-container">
         <!-- Sidebar -->
         <aside class="admin-sidebar">
+            <button class="sidebar-close-btn" onclick="document.querySelector('.admin-sidebar').classList.remove('active')">✕</button>
             <div class="sidebar-header">
                 <span style="font-size: 1.5rem;">🛍️</span>
                 <span data-i18n="admin_panel">لوحة الإدارة</span>
@@ -76,7 +77,7 @@
 
             <ul class="sidebar-menu" style="flex: 0; margin-top: auto;">
                 <li>
-                    <a href="#" style="color: var(--danger-color);">
+                    <a href="javascript:void(0)" onclick="adminLogout()" class="logout-btn-premium" style="color: var(--danger-color);">
                         <span>🚪</span> <span data-i18n="logout">تسجيل الخروج</span>
                     </a>
                 </li>
@@ -85,38 +86,39 @@
 
         <!-- Main Content -->
         <main class="admin-content">
-            <div class="admin-header">
-                <h2 data-i18n="products_management">إدارة المنتجات</h2>
-                <div class="header-actions" style="display: flex; align-items: center; gap: 1rem;">
+            <div class="admin-header" style="margin-bottom: 0.75rem;">
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <button id="sidebar-toggle" class="sidebar-toggle-btn">☰</button>
+                    <h2 data-i18n="products_management" style="font-size: 1.5rem; margin-bottom: 0;">إدارة المنتجات</h2>
+                    <div class="luxury-badge" style="padding: 0.25rem 0.75rem; margin: 0; transform: scale(0.85); transform-origin: right;">
+                        <span data-i18n="total_products" style="font-size: 0.8rem; opacity: 0.8;">إجمالي</span>
+                        <span id="total-products-count" class="badge-number" style="width: 20px; height: 20px; font-size: 0.7rem;">0</span>
+                    </div>
+                </div>
+                <div class="header-actions" style="display: flex; align-items: center; gap: 0.5rem;">
                     <button onclick="openModal()" class="btn-premium-add"
-                        style="display: flex; align-items: center; gap: 0.5rem;">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
-                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <line x1="12" y1="5" x2="12" y2="19"></line>
-                            <line x1="5" y1="12" x2="19" y2="12"></line>
-                        </svg>
-                        <span data-i18n="add_new_product">إضافة منتج جديد</span>
+                        style="display: flex; align-items: center; gap: 0.4rem; padding: 0.5rem 0.9rem; font-size: 0.85rem;">
+                        <span>+</span> <span data-i18n="add_new_product">إضافة منتج</span>
                     </button>
                     <!-- Theme Toggle -->
                     <div class="nav-item-luxury" id="theme-toggle" onclick="toggleTheme()"
-                        style="height: 40px; min-width: 140px;">
-                        <div class="icon-display" id="theme-icon">☀️</div>
-                        <span id="theme-text" data-i18n="light_mode">الوضع النهاري</span>
+                        style="height: 34px; min-width: 120px; padding: 0 0.5rem;">
+                        <div class="icon-display" id="theme-icon" style="font-size: 0.85rem;">☀️</div>
+                        <span id="theme-text" data-i18n="light_mode" style="font-size: 0.75rem;">الوضع النهاري</span>
                     </div>
 
                     <!-- Language Toggle -->
                     <div class="nav-item-luxury" id="lang-toggle" onclick="toggleLanguage()"
-                        style="height: 40px; min-width: 100px;">
-                        <div class="icon-display">🌐</div>
-                        <span id="lang-text" style="font-weight: 700;">EN</span>
+                        style="height: 34px; min-width: 80px; padding: 0 0.5rem;">
+                        <div class="icon-display" style="font-size: 0.85rem;">🌐</div>
+                        <span id="lang-text" style="font-weight: 700; font-size: 0.75rem;">EN</span>
                     </div>
                 </div>
             </div>
 
-
             <!-- Category Statistics Summary -->
             <div id="category-summary-container" class="admin-stats-summary"
-                style="display: flex; gap: 1rem; margin-bottom: 2rem; overflow-x: auto; padding-bottom: 0.5rem;">
+                style="display: flex; gap: 1rem; margin-bottom: 1rem; overflow-x: auto; padding-bottom: 0.5rem;">
                 <!-- Dynamically populated by admin.js -->
             </div>
 

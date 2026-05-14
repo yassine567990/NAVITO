@@ -566,6 +566,7 @@
     <div class="admin-container">
         <!-- Sidebar -->
         <aside class="admin-sidebar">
+            <button class="sidebar-close-btn" onclick="document.querySelector('.admin-sidebar').classList.remove('active')">✕</button>
             <div class="sidebar-header">
                 <span style="font-size: 1.5rem;">🛍️</span>
                 <span data-i18n="admin_panel">لوحة الإدارة</span>
@@ -596,7 +597,7 @@
 
             <ul class="sidebar-menu" style="flex: 0; margin-top: auto;">
                 <li>
-                    <a href="#" class="logout-btn" onclick="logout()" style="color: var(--danger-color);">
+                    <a href="javascript:void(0)" class="logout-btn-premium" onclick="adminLogout()" style="color: var(--danger-color);">
                         <span>🚪</span> <span data-i18n="logout">تسجيل الخروج</span>
                     </a>
                 </li>
@@ -606,7 +607,10 @@
         <!-- Main Content -->
         <main class="admin-content">
             <div class="admin-header">
-                <h2><span data-i18n="sales_management">💰 إدارة المبيعات والطلبات</span></h2>
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <button id="sidebar-toggle" class="sidebar-toggle-btn">☰</button>
+                    <h2><span data-i18n="sales_management">💰 إدارة المبيعات والطلبات</span></h2>
+                </div>
                 <div class="header-actions">
                     <!-- Theme Toggle -->
                     <div class="nav-item-luxury" id="theme-toggle" onclick="toggleTheme()"
@@ -710,6 +714,7 @@
 
     <div id="toast-container" class="toast-container"></div>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="supabase-client.js"></script>
     <script src="utils.js"></script>
     <script src="i18n.js?v=1.1"></script>
