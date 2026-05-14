@@ -488,24 +488,6 @@
         </a>
     </nav>
 
-    <!-- نافذة الخصم المنبثقة -->
-    <div id="discount-popup" class="discount-popup-overlay">
-        <div class="discount-popup">
-            <button class="popup-close" onclick="closePopup()">×</button>
-            <div class="popup-content">
-                <div class="popup-icon-luxury">🎁</div>
-                <h2 data-i18n="discount_popup_title">احصل على خصم 10% خصيصاً لك!</h2>
-                <div class="popup-line"></div>
-                <p data-i18n="discount_popup_desc">اشترك اليوم لتصلك أفضل العروض والخصومات الحصرية.</p>
-                <div class="popup-input-group-luxury">
-                    <input type="email" data-i18n="email" placeholder="البريد الإلكتروني">
-                    <button class="btn-primary-luxury" data-i18n="subscribe_btn">احصل على الخصم</button>
-                </div>
-                <button class="btn-text-luxury" onclick="closePopup()" data-i18n="no_thanks">لا شكراً، أريد التسوق
-                    فقط</button>
-            </div>
-        </div>
-    </div>
 
     <!-- البرمجيات (Scripts) -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -538,15 +520,6 @@
             }, 1000);
         }
 
-        // نافذة الخصم المنبثقة
-        function closePopup() {
-            const popup = document.getElementById('discount-popup');
-            if (popup) {
-                popup.style.animation = 'fadeOut 0.3s ease forwards';
-                setTimeout(() => popup.style.display = 'none', 300);
-            }
-            localStorage.setItem('popup_closed', 'true');
-        }
 
         // الرسوم المتحركة عند التمرير
         function initScrollAnimations() {
@@ -573,12 +546,6 @@
         document.addEventListener('DOMContentLoaded', () => {
             startCountdown(8 * 3600 + 14 * 60 + 32);
 
-            if (!localStorage.getItem('popup_closed')) {
-                setTimeout(() => {
-                    const popup = document.getElementById('discount-popup');
-                    if (popup) popup.classList.add('active');
-                }, 5000);
-            }
 
             initScrollAnimations();
 
