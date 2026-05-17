@@ -102,6 +102,11 @@ const Utils = {
 
         if (error) throw new Error(error.message);
 
+        // Ensure profile row exists immediately after signup
+        if (data.user?.id) {
+            await this.ensureProfile(data.user.id, { fullname, phone });
+        }
+
         const user = {
             id: data.user?.id,
             email: data.user?.email,
@@ -212,25 +217,22 @@ const Utils = {
     ensureProfile: async function (userId, metadata) {
         if (!userId) return;
         try {
-            const { data: existing } = await window.supabase
+            const { error } = await window.supabase
                 .from('profiles')
-                .select('id')
-                .eq('id', userId)
-                .maybeSingle();
+                .upsert({
+                    id: userId,
+                    fullname: metadata?.fullname || metadata?.full_name || '',
+                    phone: metadata?.phone || '',
+                    role: 'user'
+                }, { onConflict: 'id', ignoreDuplicates: true });
 
-            if (!existing) {
-                await window.supabase
-                    .from('profiles')
-                    .insert([{
-                        id: userId,
-                        fullname: metadata?.fullname || metadata?.full_name || '',
-                        phone: metadata?.phone || '',
-                        role: 'user'
-                    }]);
-                console.log('✅ Profile row created for user:', userId);
+            if (error && !error.message.includes('duplicate') && !error.message.includes('already exists')) {
+                console.warn('⚠️ ensureProfile warning:', error.message);
+            } else {
+                console.log('✅ Profile ensured for user:', userId);
             }
         } catch (e) {
-            console.warn('⚠️ ensureProfile fallback — profile may already exist:', e.message);
+            console.warn('⚠️ ensureProfile fallback:', e.message);
         }
     },
 
