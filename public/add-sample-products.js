@@ -238,15 +238,60 @@ const sampleProducts = [
         description: "يمنح الشفاه مظهراً ممتلئاً وجذاباً مع لمعة فائقة.",
         stock: 80,
         rating: 4.6
+    },
+    {
+        id: "bundle1",
+        name: "باقة العناية المتكاملة (3 منتجات)",
+        nameEn: "Complete Care Bundle (3 Items)",
+        category: "العروض",
+        price: 85.00,
+        image: "https://images.unsplash.com/photo-1612817288484-6f916006741a?w=800",
+        description: "تونر ماء الورد، سيروم فيتامين سي، وكريم ترطيب عميق. مجموعة متكاملة لنضارة بشرتك بسعر مميز.",
+        stock: 20,
+        rating: 5.0,
+        features: ["خصم 15%", "شحن مجاني", "3 منتجات أصلية"]
+    },
+    {
+        id: "bundle2",
+        name: "باقة مكياج السهرة الفاخر",
+        nameEn: "Luxury Evening Makeup Bundle",
+        category: "العروض",
+        price: 110.00,
+        image: "https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=800",
+        description: "كريم أساس تغطية كاملة، هايلايتر، ماسكارا، وأحمر شفاه مات. إطلالة سينمائية متكاملة.",
+        stock: 15,
+        rating: 4.9,
+        features: ["توفير 25 دولار", "ألوان متناسقة", "هدية مجانية"]
+    },
+    {
+        id: "bundle3",
+        name: "باقة العطور الملكية (عطرين)",
+        nameEn: "Royal Perfumes Pack (2 Items)",
+        category: "العروض",
+        price: 150.00,
+        image: "https://images.unsplash.com/photo-1541643600914-78b084683601?w=800",
+        description: "عطر الياسمين الملكي مع عطر ليلي فاخر. مزيج لا يقاوم من الروائح الشرقية والفرنسية.",
+        stock: 10,
+        rating: 5.0,
+        features: ["عطرين بحجم 100 مل", "تغليف هدايا مجاني", "شحن مجاني سريع"]
     }
 ];
 
-// إضافة المنتجات التجريبية فقط إذا كان المتجر يحتوي على أقل من المجموعة الكاملة (20 منتج)
+// التأكد من توفر جميع المنتجات التجريبية (بما فيها الباقات)
 const existingProducts = JSON.parse(localStorage.getItem('admin_products_prod_v1') || '[]');
-if (existingProducts.length < 20) {
-    // دمج أو استبدال لضمان توفر كافة الـ 20 منتجاً
-    localStorage.setItem('admin_products_prod_v1', JSON.stringify(sampleProducts));
-    console.log('✅ تم تحديث وإضافة المنتجات الفاخرة الـ 20 بنجاح!');
+let productsAdded = false;
+
+// تحديث أو إضافة المنتجات الناقصة بناءً على ID
+sampleProducts.forEach(sample => {
+    if (!existingProducts.some(p => p.id === sample.id || p._id === sample.id)) {
+        existingProducts.push(sample);
+        productsAdded = true;
+    }
+});
+
+if (productsAdded) {
+    localStorage.setItem('admin_products_prod_v1', JSON.stringify(existingProducts));
+    console.log('✅ تم تحديث وإضافة المنتجات التجريبية الناقصة بنجاح!');
 } else {
-    console.log('ℹ️ المنتجات موجودة بالفعل في التخزين المحلي (LocalStorage).');
+    console.log('ℹ️ جميع المنتجات التجريبية موجودة بالفعل.');
 }

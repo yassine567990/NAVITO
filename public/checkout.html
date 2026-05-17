@@ -13,7 +13,9 @@
     <script>
         (function () {
             const currentUser = localStorage.getItem('navito_current_user');
-            if (!currentUser) {
+            const session = localStorage.getItem('navito_session');
+            const adminToken = localStorage.getItem('admin_token');
+            if (!currentUser && !session && !adminToken) {
                 window.location.href = 'login.html';
                 return;
             }
@@ -350,7 +352,7 @@
                 <span id="theme-text" data-i18n="dark_mode">الوضع الليلي</span>
             </div>
 
-            <div class="nav-item-luxury" onclick="window.location.href='/'">
+            <div class="nav-item-luxury" onclick="window.location.href='index.html'">
                 <div class="icon-display">🏠</div>
                 <span data-i18n="home">الرئيسية</span>
             </div>
@@ -375,38 +377,38 @@
 
                         <div class="form-group">
                             <label class="form-label" for="name" data-i18n="full_name">الاسم الكامل *</label>
-                            <input type="text" id="name" class="form-input" required data-i18n="full_name"
+                            <input type="text" id="name" name="full_name" class="form-input" required data-i18n="full_name"
                                 placeholder="الاسم الكامل">
                         </div>
 
                         <div class="form-row">
                             <div class="form-group">
                                 <label class="form-label" for="email" data-i18n="email">البريد الإلكتروني *</label>
-                                <input type="email" id="email" class="form-input" required data-i18n="email"
+                                <input type="email" id="email" name="email" class="form-input" required data-i18n="email"
                                     placeholder="example@mail.com">
                             </div>
                             <div class="form-group">
                                 <label class="form-label" for="phone" data-i18n="phone">رقم الهاتف *</label>
-                                <input type="tel" id="phone" class="form-input" required data-i18n="phone"
+                                <input type="tel" id="phone" name="phone" class="form-input" required data-i18n="phone"
                                     placeholder="+216XXXXXXXX">
                             </div>
                         </div>
 
                         <div class="form-group">
                             <label class="form-label" for="address" data-i18n="full_address">العنوان الكامل *</label>
-                            <input type="text" id="address" class="form-input" required data-i18n="full_address"
+                            <input type="text" id="address" name="full_address" class="form-input" required data-i18n="full_address"
                                 placeholder="الحي، الشارع، رقم المنزل">
                         </div>
 
                         <div class="form-row">
                             <div class="form-group">
                                 <label class="form-label" for="city" data-i18n="city">المدينة *</label>
-                                <input type="text" id="city" class="form-input" required data-i18n="city"
+                                <input type="text" id="city" name="city" class="form-input" required data-i18n="city"
                                     placeholder="casablanca">
                             </div>
                             <div class="form-group">
                                 <label class="form-label" for="postal" data-i18n="postal">الرمز البريدي</label>
-                                <input type="text" id="postal" class="form-input" data-i18n="postal"
+                                <input type="text" id="postal" name="postal" class="form-input" data-i18n="postal"
                                     placeholder="12345">
                             </div>
                         </div>

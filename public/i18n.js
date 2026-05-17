@@ -299,6 +299,9 @@ const translations = {
         'go_shopping': 'تصفح المنتجات',
         'shop_now': 'تسوق الآن',
         'discover_products': 'اكتشف المنتجات',
+        'discover_offers': 'اكتشف العروض',
+        'offers_title': 'عروض نافيتو | Navito Offers',
+        'category_offers': 'العروض',
         'social_proof_watching': '24 شخص يشاهدون المنتج الآن',
         'social_proof_purchased': 'تم شراء هذا المنتج 120 مرة اليوم',
         'offer_ends_in': 'العرض ينتهي خلال:',
@@ -631,6 +634,9 @@ const translations = {
         'go_shopping': 'Browse Products',
         'shop_now': 'Shop Now',
         'discover_products': 'Discover Products',
+        'discover_offers': 'Discover Offers',
+        'offers_title': 'Navito Offers',
+        'category_offers': 'Offers',
         'social_proof_watching': '24 people are watching this now',
         'social_proof_purchased': 'This product was purchased 120 times today',
         'offer_ends_in': 'Offer ends in:',
@@ -744,7 +750,14 @@ function applyTranslations() {
             el.placeholder = translation;
         } else if (el.tagName === 'TEXTAREA') {
             el.placeholder = translation;
+        } else if (el.tagName === 'SELECT') {
+             // Handle dropdown options if needed
         } else {
+            el.textContent = translation;
+        }
+        
+        // Specific handling for Admin category selection
+        if (el.tagName === 'OPTION') {
             el.textContent = translation;
         }
     });

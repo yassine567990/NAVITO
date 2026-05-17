@@ -159,29 +159,65 @@ async function deleteProductFromCloud(productId) {
 }
 
 let previousOrdersCount = -1;
+let currentOrders = [];
+
+function getLocalOrders() {
+    try {
+        return JSON.parse(localStorage.getItem(ORDERS_STORAGE_KEY) || '[]');
+    } catch (e) {
+        console.warn('Failed to parse local orders', e);
+        return [];
+    }
+}
+
+function saveLocalOrders(orders) {
+    localStorage.setItem(ORDERS_STORAGE_KEY, JSON.stringify(orders));
+}
 
 async function fetchOrders() {
-    try {
-        const orders = await Utils.getAllOrders();
+    console.log('🚀 fetchOrders called');
+    const loader = document.getElementById('admin-loader');
+    if (loader) loader.style.display = 'block';
 
-        // Normalize Supabase fields for the existing render logic
-        const normalized = orders.map(o => ({
-            ...o,
-            _id: o.id,
-            orderNumber: o.order_id,
-            customerName: o.profiles?.fullname || o.shipping_address?.fullname || 'N/A',
-            customerEmail: o.profiles?.email || 'N/A',
-            customerPhone: o.shipping_address?.phone || 'N/A',
-            shippingAddress: o.shipping_address?.address || 'N/A',
-            postalCode: o.shipping_address?.postal || '',
-            total: o.total_amount,
-            subtotal: o.total_amount,
-            shipping: 0,
-            items: Array.isArray(o.items) ? o.items : [],
-            orderDate: o.created_at,
-            date: o.created_at,
-            status: (o.status || 'pending').toLowerCase()
-        }));
+    try {
+        let orders = [];
+        try {
+            // First try querying Supabase via Utils.getAllOrders()
+            orders = await Utils.getAllOrders();
+            console.log('☁️ Orders fetched from Supabase:', orders.length);
+        } catch (supabaseErr) {
+            console.warn('Supabase fetch failed, falling back to LocalStorage:', supabaseErr);
+            orders = getLocalOrders();
+        }
+
+        // Normalize fields for the existing render logic (both Supabase and LocalStorage structure)
+        const normalized = orders.map(o => {
+            // If already normalized or local, return as is (but ensure lowercase status)
+            if (o.orderNumber && o.total !== undefined) {
+                return {
+                    ...o,
+                    _id: o._id || o.id,
+                    status: (o.status || 'pending').toLowerCase()
+                };
+            }
+            return {
+                ...o,
+                _id: o.id,
+                orderNumber: o.order_id || `#${o.id ? o.id.slice(0, 8) : Date.now()}`,
+                customerName: o.profiles?.fullname || o.shipping_address?.fullname || 'N/A',
+                customerEmail: o.profiles?.email || 'N/A',
+                customerPhone: o.shipping_address?.phone || 'N/A',
+                shippingAddress: o.shipping_address?.address || 'N/A',
+                postalCode: o.shipping_address?.postal || '',
+                total: o.total_amount,
+                subtotal: o.total_amount,
+                shipping: 0,
+                items: Array.isArray(o.items) ? o.items : [],
+                orderDate: o.created_at,
+                date: o.created_at,
+                status: (o.status || 'pending').toLowerCase()
+            };
+        });
 
         // Check for new orders notification
         if (previousOrdersCount !== -1 && normalized.length > previousOrdersCount) {
@@ -191,16 +227,32 @@ async function fetchOrders() {
         previousOrdersCount = normalized.length;
 
         window.currentOrders = normalized;
-        renderOrdersTable(normalized);
+        currentOrders = normalized; // Keep both global and local variables updated
+
+        // Render orders and update stats
+        if (typeof renderOrders === 'function') {
+            renderOrders(normalized);
+        }
+        if (typeof updateOrderStats === 'function') {
+            updateOrderStats(normalized);
+        }
         updateDashboardStats(window.allStoreProducts || []);
+
         return normalized;
     } catch (error) {
-        console.error('Error fetching orders from Supabase:', error);
+        console.error('Error in fetchOrders:', error);
+    } finally {
+        if (loader) loader.style.display = 'none';
+
+        // Update Chart if on Dashboard
+        if (document.getElementById('salesChart')) {
+            initDashboard();
+        }
     }
 }
 
 function showNewOrderNotification(count) {
-    // تشغيل صوت تنبيه احترافي
+    // تشغيل صوت تنبيه احترافي للطلبات الجديدة
     const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
     audio.play().catch(e => console.log("Audio play blocked by browser policy"));
 
@@ -214,6 +266,44 @@ setInterval(fetchOrders, 30000);
 function getLocalProducts() {
     return window.allStoreProducts || [];
 }
+
+// Dynamic Injection of "Test Sound" Button into Header Actions
+document.addEventListener('DOMContentLoaded', () => {
+    const headerActions = document.querySelector('.header-actions');
+    if (headerActions) {
+        // Create the test button
+        const testBtn = document.createElement('div');
+        testBtn.className = 'nav-item-luxury';
+        testBtn.id = 'test-notification-sound-btn';
+        testBtn.style.cursor = 'pointer';
+        testBtn.style.height = '40px';
+        testBtn.style.minWidth = '140px';
+        testBtn.style.display = 'flex';
+        testBtn.style.alignItems = 'center';
+        testBtn.style.justifyContent = 'center';
+        testBtn.style.gap = '0.5rem';
+        testBtn.style.border = '1px dashed var(--accent-color)';
+        
+        // Use multilingual support
+        const isEnglish = document.documentElement.lang === 'en';
+        const buttonText = isEnglish ? '🔔 Test Alert' : '🔔 تجربة التنبيه';
+        testBtn.title = isEnglish ? 'Test New Order Sound & Notification' : 'تجربة صوت وشعار الطلبات الجديدة';
+        
+        testBtn.innerHTML = `
+            <div class="icon-display">🔔</div>
+            <span style="font-weight: 600; font-size: 0.85rem;">${buttonText}</span>
+        `;
+        
+        testBtn.addEventListener('click', () => {
+            if (typeof showNewOrderNotification === 'function') {
+                showNewOrderNotification(1);
+            }
+        });
+        
+        // Prepend it before language/theme toggle to make it neat
+        headerActions.prepend(testBtn);
+    }
+});
 
 // --- Global Functions (Bound to Window immediately) ---
 
@@ -922,45 +1012,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // ===== ORDERS MANAGEMENT FUNCTIONS =====
 
-let currentOrders = [];
-
-async function fetchOrders() {
-    console.log('🚀 fetchOrders called');
-    const loader = document.getElementById('admin-loader');
-    if (loader) loader.style.display = 'block';
-
-    try {
-        // Try API first (will fail in demo mode)
-        const timeout = new Promise((_, reject) => setTimeout(() => reject('Timeout'), 2000));
-        const res = await Promise.race([fetch('/api/orders'), timeout]);
-        const orders = await res.json();
-        currentOrders = orders;
-        renderOrders(orders);
-        updateOrderStats(orders);
-    } catch (err) {
-        console.log('📦 Using LocalStorage (demo mode)');
-        // Simply read from LocalStorage - init-demo-data.js has already populated it
-        const localOrders = getLocalOrders();
-        console.log('📂 Orders from LocalStorage:', localOrders.length);
-
-        const localProducts = getLocalProducts();
-        console.log('📦 Products from LocalStorage:', localProducts.length);
-
-        // We NO LONGER sync orders with current product data to preserve historical pricing integrity.
-        // Once an order is placed, its price must remain fixed.
-        currentOrders = localOrders;
-        console.log('🎨 Rendering', localOrders.length, 'orders');
-        renderOrders(localOrders);
-        updateOrderStats(localOrders);
-    } finally {
-        if (loader) loader.style.display = 'none';
-
-        // Update Chart if on Dashboard
-        if (document.getElementById('salesChart')) {
-            initDashboard();
-        }
-    }
-}
+// Legacy currentOrders declaration and fetchOrders function removed to use the unified implementation at the top.
 
 // Helper: Create sample orders from available products
 function createSampleOrders(products) {

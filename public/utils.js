@@ -9,9 +9,10 @@ const Utils = {
      * مساعدات المصادقة (Authentication Helpers) — Supabase Auth
      */
     isLoggedIn: function () {
-        // Check localStorage for Supabase session token
+        // Check localStorage for Supabase session token or Admin token
         const session = localStorage.getItem('navito_session');
-        return !!session;
+        const adminToken = localStorage.getItem('admin_token');
+        return !!session || !!adminToken;
     },
 
     isAdmin: function () {
@@ -24,10 +25,11 @@ const Utils = {
         return session;
     },
 
-    logout: async function (redirectUrl = '/') {
+    logout: async function (redirectUrl = 'index.html') {
         await window.supabase.auth.signOut();
         localStorage.removeItem('navito_current_user');
         localStorage.removeItem('navito_session');
+        localStorage.removeItem('admin_token');
         window.location.href = redirectUrl;
     },
 
@@ -38,7 +40,7 @@ const Utils = {
             try {
                 const session = JSON.parse(sessionStr);
                 // Optionally verify with Supabase if needed, but local storage is faster for UX
-                window.supabase.auth.setSession(session);
+                await window.supabase.auth.setSession(session);
             } catch (e) {
                 localStorage.removeItem('navito_session');
             }
@@ -204,16 +206,39 @@ const Utils = {
      * الطلبات (Orders)
      */
     createOrder: async function (orderData) {
-        const session = await this.getSession();
-        if (!session) throw new Error('يجب تسجيل الدخول أولاً');
+        let userId = null;
+        let session = await this.getSession();
+        
+        if (session && session.user) {
+            userId = session.user.id;
+        } else {
+            // Fallback: Try reading from localStorage to bypass Supabase client hydration lag/session expiry
+            const sessionStr = localStorage.getItem('navito_session');
+            const currentUserStr = localStorage.getItem('navito_current_user');
+            if (sessionStr) {
+                try {
+                    const parsedSession = JSON.parse(sessionStr);
+                    userId = parsedSession.user?.id || parsedSession.user_id;
+                } catch (e) {}
+            }
+            if (!userId && currentUserStr) {
+                try {
+                    const parsedUser = JSON.parse(currentUserStr);
+                    userId = parsedUser.id || parsedUser._id || (parsedUser.role === 'admin' ? '00000000-0000-0000-0000-000000000000' : null);
+                } catch (e) {}
+            }
+        }
+
+        if (!userId) {
+            throw new Error('يجب تسجيل الدخول أولاً');
+        }
 
         const payload = {
-            user_id: session.user.id,
+            user_id: userId,
             items: orderData.orderItems,
             total_amount: orderData.totalAmount,
             shipping_address: orderData.shippingAddress,
             payment_method: orderData.paymentMethod || 'Cash on Delivery',
-            payment_status: 'Pending',
             status: 'Pending'
         };
 
@@ -228,13 +253,34 @@ const Utils = {
     },
 
     getMyOrders: async function () {
+        let userId = null;
         const session = await this.getSession();
-        if (!session) return [];
+        
+        if (session && session.user) {
+            userId = session.user.id;
+        } else {
+            const sessionStr = localStorage.getItem('navito_session');
+            const currentUserStr = localStorage.getItem('navito_current_user');
+            if (sessionStr) {
+                try {
+                    const parsedSession = JSON.parse(sessionStr);
+                    userId = parsedSession.user?.id || parsedSession.user_id;
+                } catch (e) {}
+            }
+            if (!userId && currentUserStr) {
+                try {
+                    const parsedUser = JSON.parse(currentUserStr);
+                    userId = parsedUser.id || parsedUser._id || (parsedUser.role === 'admin' ? '00000000-0000-0000-0000-000000000000' : null);
+                } catch (e) {}
+            }
+        }
+
+        if (!userId) return [];
 
         const { data, error } = await window.supabase
             .from('orders')
             .select('*')
-            .eq('user_id', session.user.id)
+            .eq('user_id', userId)
             .order('created_at', { ascending: false });
 
         if (error) throw new Error(error.message);
@@ -342,6 +388,39 @@ const Utils = {
     formatCurrency: function (amount) {
         const currency = typeof window.t === 'function' ? window.t('currency') : (this.isEnglish() ? 'SAR' : 'ر.س');
         return `${currency} ${Number(amount).toFixed(2)}`;
+    },
+
+    /**
+     * تحديث يدوي للبيانات والجلسة
+     */
+    manualSync: async function () {
+        if (typeof showToast === 'function') showToast(this.isEnglish() ? 'Syncing data...' : 'جاري تحديث البيانات...', 'success');
+        
+        try {
+            // 1. إعادة تهيئة الجلسة
+            await this.init();
+            
+            // 2. تحديث المنتجات
+            if (window.getLocalStoreProducts) {
+                await window.getLocalStoreProducts();
+            }
+
+            // 3. تحديث واجهة المستخدم
+            if (window.NAVITO && window.NAVITO.UI && window.NAVITO.UI.updateAuth) {
+                window.NAVITO.UI.updateAuth();
+            }
+            
+            // 4. إعادة تطبيق الفلاتر إذا كنا في صفحة المتجر
+            if (window.NAVITO && window.NAVITO.Logic && window.NAVITO.Logic.applyFilters) {
+                const term = document.getElementById('main-search-input')?.value || '';
+                window.NAVITO.Logic.applyFilters(term, window.NAVITO.State.currentCategory || 'الكل');
+            }
+
+            if (typeof showToast === 'function') showToast(this.isEnglish() ? 'Data synced successfully' : 'تم تحديث البيانات بنجاح', 'success');
+        } catch (e) {
+            console.error('Manual sync failed:', e);
+            if (typeof showToast === 'function') showToast(e.message, 'error');
+        }
     }
 };
 
@@ -349,13 +428,45 @@ const Utils = {
 // Keep localStorage in sync with Supabase session
 if (window.supabase) {
     window.supabase.auth.onAuthStateChange(async (event, session) => {
-        if (event === 'SIGNED_IN' && session) {
+        if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session) {
             localStorage.setItem('navito_session', JSON.stringify(session));
+            
+            // Sync user data if missing or changed
+            const currentUser = localStorage.getItem('navito_current_user');
+            if (!currentUser || event === 'SIGNED_IN') {
+                try {
+                    const { data: profile } = await window.supabase
+                        .from('profiles')
+                        .select('*')
+                        .eq('id', session.user.id)
+                        .maybeSingle();
+
+                    const userData = {
+                        id: session.user.id,
+                        email: session.user.email,
+                        fullname: profile?.fullname || session.user.user_metadata?.fullname || '',
+                        phone: profile?.phone || '',
+                        role: profile?.role || 'user'
+                    };
+                    localStorage.setItem('navito_current_user', JSON.stringify(userData));
+                    
+                    // Trigger UI update if NAVITO is available
+                    if (window.NAVITO && window.NAVITO.UI && window.NAVITO.UI.updateAuth) {
+                        window.NAVITO.UI.updateAuth();
+                    }
+                } catch (e) {
+                    console.error('Error syncing user profile:', e);
+                }
+            }
         } else if (event === 'SIGNED_OUT') {
             localStorage.removeItem('navito_session');
             localStorage.removeItem('navito_current_user');
-        } else if (event === 'TOKEN_REFRESHED' && session) {
-            localStorage.setItem('navito_session', JSON.stringify(session));
+            localStorage.removeItem('admin_token');
+            
+            // Trigger UI update
+            if (window.NAVITO && window.NAVITO.UI && window.NAVITO.UI.updateAuth) {
+                window.NAVITO.UI.updateAuth();
+            }
         }
     });
 }

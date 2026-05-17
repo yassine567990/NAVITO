@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="google" content="notranslate">
     <meta name="description" content="Navito - Your Premium E-commerce Destination">
-    <title data-i18n="home">الرئيسية | Navito</title>
+    <title data-i18n="offers_title">عروض نافيتو | Navito Offers</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="modal-styles.css">
     <link
@@ -83,7 +83,8 @@
             </div>
 
             <!-- زر الحساب (سطح المكتب) -->
-            <div class="nav-item-luxury" id="desktop-account-nav" onclick="handleAccountClick()" style="cursor: pointer;">
+            <div class="nav-item-luxury" id="desktop-account-nav" onclick="handleAccountClick()"
+                style="cursor: pointer;">
                 <div class="icon-display"><i class="fas fa-user-circle"></i></div>
                 <span id="desktop-account-text" data-i18n="account">حسابي</span>
             </div>
@@ -105,47 +106,33 @@
     </header>
 
     <main>
-        <!-- قسم البطولة (Hero Section) -->
-        <section class="hero">
-
-            <div class="container glass-hero">
-                <span class="hero-label" data-i18n="limited_offer" style="color: var(--luxury-gold);"></span>
-                <h1 class="hero-title" data-i18n="hero_title"></h1>
-                <p class="hero-subtitle" data-i18n="hero_subtitle"></p>
-                <div class="hero-actions">
-                    <button class="btn-primary-luxury" data-i18n="shop_now"
-                        onclick="document.getElementById('shop-section').scrollIntoView({ behavior: 'smooth' })">
-                        تسوق الآن
-                    </button>
-                    <button class="btn-secondary-luxury" data-i18n="discover_offers"
-                        onclick="window.location.href = 'offers.html'">
-                        اكتشف العروض
-                    </button>
+        <!-- قسم لافتة العروض (Offers Banner) -->
+        <section class="hero offers-hero-premium">
+            <div class="container glass-hero offers-glass-banner">
+                <div class="offers-banner-content">
+                    <h1 class="hero-title">عروض وتخفيضات حصرية</h1>
+                    <p class="hero-subtitle">اكتشف باقات التوفير الخاصة بنا واختبر الفخامة بأسعار لا تقبل المنافسة.</p>
+                    <div class="hero-countdown-wrapper">
+                        <span data-i18n="offer_ends_in">العرض ينتهي خلال:</span>
+                        <div id="countdown" class="countdown-timer">
+                            <div class="timer-segment"><span id="hours">02</span><label>H</label></div>
+                            <div class="timer-segment"><span id="minutes">14</span><label>M</label></div>
+                            <div class="timer-segment"><span id="seconds">32</span><label>S</label></div>
+                        </div>
+                    </div>
                 </div>
-
-
             </div>
         </section>
 
         <section class="container" id="shop-section">
-            <h3 class="section-title" data-i18n="best_sellers">
-                الأكثر مبيعاً</h3>
-
-            <!-- تبويبات التصنيفات -->
-            <div class="category-pills-wrapper">
-                <div class="category-pill active" onclick="filterByCategory('الكل')" data-i18n="category_all">الكل</div>
-                <div class="category-pill" onclick="filterByCategory('مكياج')" data-i18n="category_makeup">مكياج</div>
-                <div class="category-pill" onclick="filterByCategory('عناية بالبشرة')" data-i18n="category_skincare">عناية بالبشرة</div>
-                <div class="category-pill" onclick="filterByCategory('عطور')" data-i18n="category_perfumes">عطور</div>
-                <div class="category-pill" onclick="filterByCategory('العناية بالشعر')" data-i18n="category_haircare">عناية بالشعر</div>
-                <div class="category-pill" onclick="filterByCategory('أدوات المكياج')" data-i18n="category_makeup_tools">أدوات مكياج</div>
-            </div>
+            <h3 class="section-title" style="text-align: center; margin-bottom: 2rem;">
+                الباقات المتوفرة</h3>
 
             <!-- شبكة المنتجات -->
             <div class="products-grid" id="products-grid">
                 <!-- سيتم حقن المنتجات هنا بواسطة app.js -->
             </div>
-            
+
             <!-- قسم الثقة والمراجعات -->
             <section class="reviews-section">
                 <div class="container">
@@ -522,7 +509,38 @@
 
     <!-- سكريبتات متقدمة: الرسوم المتحركة، الإثبات الاجتماعي، التفاعلات الدقيقة -->
     <script>
-
+        // عداد العد التنازلي لقسم البطولة
+        // عداد العد التنازلي لقسم البطولة
+        function startCountdown(duration) {
+            let timer = duration;
+            const intervalId = setInterval(function () {
+                const h = Math.floor(timer / 3600);
+                const m = Math.floor((timer % 3600) / 60);
+                const s = timer % 60;
+                const hoursEl = document.getElementById('hours');
+                const minutesEl = document.getElementById('minutes');
+                const secondsEl = document.getElementById('seconds');
+                if (hoursEl) hoursEl.textContent = h < 10 ? "0" + h : h;
+                if (minutesEl) minutesEl.textContent = m < 10 ? "0" + m : m;
+                if (secondsEl) secondsEl.textContent = s < 10 ? "0" + s : s;
+                
+                if (--timer < 0) {
+                    clearInterval(intervalId);
+                    
+                    // إخفاء قسم الباقات عند انتهاء الوقت
+                    const productsGrid = document.getElementById('products-grid');
+                    if (productsGrid) {
+                        productsGrid.innerHTML = '<div style="text-align:center; width:100%; padding:3rem;"><h3 style="color:var(--danger-color); font-size: 1.5rem;">عذراً، لقد انتهى وقت هذه العروض. ترقبوا عروضنا القادمة!</h3></div>';
+                    }
+                    
+                    // تحديث النص في اللافتة
+                    const subtitle = document.querySelector('.hero-subtitle');
+                    if (subtitle) {
+                        subtitle.textContent = "عذراً، لقد انتهت صلاحية العروض الحالية.";
+                    }
+                }
+            }, 1000);
+        }
 
 
         // الرسوم المتحركة عند التمرير
@@ -548,11 +566,13 @@
 
 
         document.addEventListener('DOMContentLoaded', () => {
-
+            startCountdown(8 * 3600 + 14 * 60 + 32);
 
 
             initScrollAnimations();
 
+            // Set global flag to ensure app.js filters correctly after loading products
+            window.IS_OFFERS_PAGE = true;
 
             // مزامنة شارة العربة للهاتف عند التحميل
             const syncMobileBadge = () => {

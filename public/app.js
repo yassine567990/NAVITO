@@ -165,6 +165,19 @@ window.NAVITO = {
                 window.location.href = 'checkout.html';
             }
         },
+
+        // الإضافة للسلة
+        addToCart: function (id, btnElement) {
+            const product = NAVITO.State.products.find(p => p._id == id || p.id == id);
+            if (product && typeof CartManager !== 'undefined') {
+                const isEnglish = (NAVITO.State.currentLang === 'en');
+                const name = isEnglish ? (product.nameEn || product.name) : (product.name_ar || product.name);
+                CartManager.addItem(product, btnElement, 1);
+                if (typeof showToast === 'function') {
+                    showToast(isEnglish ? `${name} added to cart ✓` : `تمت إضافة ${name} إلى السلة ✓`, 'success');
+                }
+            }
+        },
         // الفلترة حسب التصنيف
         filterByCategory: function(category) {
             NAVITO.State.currentCategory = category;
@@ -197,13 +210,23 @@ window.NAVITO = {
             const name = isEnglish ? (product.nameEn || product.name) : (product.name_ar || product.name);
             const rating = product.rating || 4.5;
             const currency = (typeof t === 'function' ? t('currency') : 'MAD');
+            const discount = product.oldPrice ? Math.round(((product.oldPrice - product.price) / product.oldPrice) * 100) : 0;
+            const soldCount = product.soldCount || (Math.floor(Math.random() * 800) + 200);
+
             return `
                 <div class="store-product-card" data-id="${product._id || product.id}">
                     <div class="store-card-img-wrapper">
                         <img class="store-card-img" src="${product.image}" alt="${name}" loading="lazy">
-                        <button class="view-details-pill navito-action-details" data-id="${product._id || product.id}">
-                            <i class="fas fa-eye"></i>
-                        </button>
+                        ${discount > 0 ? `<div class="discount-badge-luxury">-${discount}%</div>` : ''}
+                        
+                        <div class="product-card-actions">
+                            <button class="action-btn-luxury navito-action-details" data-id="${product._id || product.id}">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button class="action-btn-luxury navito-action-buy" data-id="${product._id || product.id}">
+                                <i class="fas fa-shopping-cart"></i>
+                            </button>
+                        </div>
                     </div>
                     <div class="luxury-body">
                         <div class="meta-row-luxury">
@@ -213,13 +236,23 @@ window.NAVITO = {
                                 </div>
                                 <span class="rating-value">${rating.toFixed(1)}</span>
                             </div>
-                            <span class="category-luxury">${product.category}</span>
+                            <span class="sold-count-badge"><i class="fas fa-fire"></i> ${soldCount}+ ${isEnglish ? 'Sold' : 'تم البيع'}</span>
                         </div>
                         <h3 class="title-luxury">${name}</h3>
                         <div class="price-row-luxury">
-                            <div class="price-luxury">${currency} ${product.price.toFixed(2)}</div>
-                            <button class="btn-buy-now-compact navito-action-buy" data-id="${product._id || product.id}">
-                                ${typeof t === 'function' ? t('buy_now') : 'اشترِ الآن'}
+                            <div class="price-stack">
+                                <div class="price-luxury">${currency} ${product.price.toFixed(2)}</div>
+                                ${product.oldPrice ? `<div class="old-price-luxury">${currency} ${product.oldPrice.toFixed(2)}</div>` : ''}
+                            </div>
+                            ${product.category === 'العروض' ? `<span class="bundle-badge-luxury"><i class="fas fa-gift"></i> باقة</span>` : ''}
+                        </div>
+                        <div class="card-actions-dual">
+                            <button class="btn-buy-now-luxury navito-action-buy" data-id="${product._id || product.id}">
+                                <i class="fas fa-tag"></i>
+                                <span>${isEnglish ? 'Buy Now' : 'اطلب الآن'}</span>
+                            </button>
+                            <button class="btn-add-cart-luxury navito-action-add-cart" data-id="${product._id || product.id}" title="${isEnglish ? 'Add to Cart' : 'أضف للسلة'}">
+                                <i class="fas fa-shopping-basket"></i>
                             </button>
                         </div>
                     </div>
@@ -235,7 +268,7 @@ window.NAVITO = {
                 <div class="cart-item">
                     <img src="${item.image}" alt="${name}">
                     <div class="cart-item-details">
-                        <div class="cart-item-title">${name}</div>
+                        <div class="cart-item-title">${name} ${item.isBundle ? '<span class="badge-bundle-small">Bundle</span>' : ''}</div>
                         <div class="cart-item-price">${currency} ${item.price.toFixed(2)} × ${item.quantity}</div>
                         <div class="cart-item-controls">
                             <button class="qty-btn navito-action-qty" data-name="${item.name}" data-delta="-1">${item.quantity === 1 ? '<i class="fas fa-trash-alt" style="font-size:0.8rem;"></i>' : '-'}</button>
@@ -260,28 +293,32 @@ window.NAVITO = {
                     if (typeof handleAccountClick === 'function') handleAccountClick();
                 }
 
-                // نقرة التفاصيل
-                if (target.closest('.navito-action-details') || target.closest('.view-details-pill')) {
-                    const btn = target.closest('.navito-action-details') || target.closest('.view-details-pill');
-                    const id = btn.getAttribute('data-id') || btn.onclick?.toString().match(/'(.*?)'/)?.[1]; // Fallback for old templates
+                // نقرة التفاصيل (الزر أو الصورة)
+                if (target.closest('.navito-action-details') || target.closest('.view-details-pill') || target.closest('.store-card-img-wrapper')) {
+                    const container = target.closest('.store-product-card');
+                    const id = container ? container.getAttribute('data-id') : null;
                     if (id && typeof openProductModal === 'function') openProductModal(id);
                 }
                 
                 // نقرة الشراء الآن
                 if (target.closest('.navito-action-buy') || target.id === 'modal-buy-now') {
-                    const id = target.getAttribute('data-id') || window.currentProductId;
+                    const btn = target.closest('.navito-action-buy') || target;
+                    const id = btn.getAttribute('data-id') || target.getAttribute('data-id') || window.currentProductId;
                     NAVITO.Logic.buyNow(id);
                 }
 
+                // نقرة إضافة للسلة من بطاقة المنتج
+                if (target.closest('.navito-action-add-cart') && !target.closest('.product-modal')) {
+                    const btn = target.closest('.navito-action-add-cart');
+                    const id = btn.getAttribute('data-id');
+                    if (id) NAVITO.Logic.addToCart(id, btn);
+                }
+
                 // الإضافة للسلة من النافذة المنبثقة
-                if (target.id === 'modal-add-cart') {
+                if (target.id === 'modal-add-cart' || target.closest('#modal-add-cart')) {
                     if (typeof addToCartFromModal === 'function') addToCartFromModal();
                 }
                 
-                // أزرار تبديل العربة
-                if (target.closest('.close-cart') || target.closest('.close-label') || target.closest('.mobile-only-close') || target.closest('.cart-overlay') || target.closest('.nav-item-cart') || target.id === 'cart-toggle-btn') {
-                    NAVITO.UI.toggleCart();
-                }
                 
                 // ابدأ التسوق (عندما تكون السلة فارغة)
                 if (target.classList.contains('navito-action-start-shopping')) {
@@ -356,10 +393,24 @@ window.NAVITO = {
 
             // شريط البحث
             const input = document.getElementById('main-search-input');
+            const searchBtn = document.getElementById('main-search-btn');
+            
             if (input && typeof Utils !== 'undefined') {
                 input.addEventListener('input', Utils.debounce(() => {
                     NAVITO.Logic.applyFilters(input.value.toLowerCase(), NAVITO.State.currentCategory);
                 }, 300));
+                
+                if (searchBtn) {
+                    searchBtn.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        input.focus();
+                        
+                        // Scroll to shop section to see results if user searches
+                        if (input.value.trim() !== '') {
+                            document.getElementById('shop-section')?.scrollIntoView({ behavior: 'smooth' });
+                        }
+                    });
+                }
             }
             
             // تبويبات التصنيفات
@@ -391,7 +442,11 @@ window.NAVITO = {
 
             if (typeof CartManager !== 'undefined') CartManager.init();
             NAVITO.UI.updateAuth();
-            NAVITO.Logic.applyFilters('', 'الكل');
+            if (window.IS_OFFERS_PAGE) {
+                NAVITO.Logic.applyFilters('', 'العروض');
+            } else {
+                NAVITO.Logic.applyFilters('', 'الكل');
+            }
             NAVITO.Init.events();
 
             // المزامنة في الوقت الفعلي عند تغيير المنتجات في تبويب آخر
@@ -415,6 +470,7 @@ window.NAVITO = {
 window.toggleCart = NAVITO.UI.toggleCart.bind(NAVITO.UI);
 window.renderCart = NAVITO.UI.renderCart.bind(NAVITO.UI);
 window.buyNow = NAVITO.Logic.buyNow.bind(NAVITO.Logic);
+window.addToCart = NAVITO.Logic.addToCart.bind(NAVITO.Logic);
 window.filterByCategory = NAVITO.Logic.filterByCategory.bind(NAVITO.Logic);
 window.allStoreProducts = NAVITO.State.products;
 
@@ -590,10 +646,19 @@ window.handleAccountClick = function () {
         const nameEl = document.getElementById('account-name');
         const emailEl = document.getElementById('account-email');
         const phoneEl = document.getElementById('account-phone');
+        const cityEl = document.getElementById('account-city');
+        const streetEl = document.getElementById('account-street');
+        const zipEl = document.getElementById('account-zip');
         
-        if (nameEl) nameEl.textContent = user.fullname || '-';
+        // Fix phone number bug: don't default to email if phone is not provided
+        const phoneValue = user.phone && user.phone !== user.email ? user.phone : '';
+        
+        if (nameEl) nameEl.value = user.fullname || '';
         if (emailEl) emailEl.textContent = user.email || '-';
-        if (phoneEl) phoneEl.textContent = user.phone || '-';
+        if (phoneEl) phoneEl.value = phoneValue;
+        if (cityEl) cityEl.value = user.city || '';
+        if (streetEl) streetEl.value = user.street || '';
+        if (zipEl) zipEl.value = user.zip || '';
         
         // إظهار النافذة
         const modal = document.getElementById('account-modal');
@@ -604,6 +669,108 @@ window.handleAccountClick = function () {
     } else {
         window.location.href = 'login.html';
     }
+};
+
+window.handleGetLocation = function () {
+    const cityEl = document.getElementById('account-city');
+    const streetEl = document.getElementById('account-street');
+    const zipEl = document.getElementById('account-zip');
+    
+    if (!navigator.geolocation) {
+        if (typeof showToast === 'function') showToast("متصفحك لا يدعم تحديد الموقع.", "error");
+        return;
+    }
+    
+    if (typeof showToast === 'function') showToast("جاري تحديد الموقع بدقة...", "success");
+    
+    navigator.geolocation.getCurrentPosition(async (position) => {
+        try {
+            const { latitude, longitude } = position.coords;
+            // استخدام خدمة مجانية لجلب تفاصيل العنوان بالكامل
+            const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&accept-language=ar`);
+            const data = await response.json();
+            
+            if (data && data.address) {
+                // استخراج المدينة
+                const city = data.address.city || data.address.town || data.address.village || data.address.state || '';
+                if (cityEl && city) cityEl.value = city;
+                
+                // استخراج الشارع والحي
+                const road = data.address.road || '';
+                const neighborhood = data.address.neighbourhood || data.address.suburb || data.address.quarter || '';
+                const houseNumber = data.address.house_number ? 'رقم ' + data.address.house_number : '';
+                
+                let streetFull = [road, neighborhood, houseNumber].filter(Boolean).join('، ');
+                if (streetEl && streetFull) streetEl.value = streetFull;
+                
+                // استخراج الرمز البريدي
+                const postcode = data.address.postcode || '';
+                if (zipEl && postcode) zipEl.value = postcode;
+                
+                if (typeof showToast === 'function') showToast("تم جلب تفاصيل موقعك والشارع بنجاح!", "success");
+            } else {
+                if (cityEl) cityEl.value = `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
+            }
+        } catch (error) {
+            console.error(error);
+            if (typeof showToast === 'function') showToast("حدث خطأ أثناء تحديد الموقع.", "error");
+        }
+    }, (error) => {
+        if (typeof showToast === 'function') showToast("يرجى تفعيل صلاحية الوصول للموقع.", "error");
+    }, {
+        timeout: 10000,
+        maximumAge: 60000
+    });
+};
+
+window.handleSaveAccountInfo = async function () {
+    const nameEl = document.getElementById('account-name');
+    const phoneEl = document.getElementById('account-phone');
+    const cityEl = document.getElementById('account-city');
+    const streetEl = document.getElementById('account-street');
+    const zipEl = document.getElementById('account-zip');
+    
+    const user = JSON.parse(localStorage.getItem('navito_current_user') || '{}');
+    
+    // تحديث البيانات محلياً
+    user.fullname = nameEl ? nameEl.value : user.fullname;
+    user.phone = phoneEl ? phoneEl.value : user.phone;
+    user.city = cityEl ? cityEl.value : user.city;
+    user.street = streetEl ? streetEl.value : user.street;
+    user.zip = zipEl ? zipEl.value : user.zip;
+    
+    localStorage.setItem('navito_current_user', JSON.stringify(user));
+    
+    if (typeof showToast === 'function') showToast("جاري الحفظ...", "success");
+    
+    // محاولة حفظ البيانات في Supabase إذا كان موجوداً
+    if (window.supabase && window.supabase.auth) {
+        try {
+            const { data: { session } } = await window.supabase.auth.getSession();
+            if (session && session.user) {
+                // تحديث جدول profiles
+                const { error } = await window.supabase
+                    .from('profiles')
+                    .update({
+                        full_name: user.fullname,
+                        phone: user.phone,
+                        city: user.city,
+                        street: user.street,
+                        zip: user.zip
+                    })
+                    .eq('id', session.user.id);
+                    
+                if (error && error.code !== 'PGRST116') {
+                    console.error('Error saving profile:', error);
+                }
+            }
+        } catch (e) {
+            console.error('Supabase save error:', e);
+        }
+    }
+    
+    if (typeof showToast === 'function') showToast("تم حفظ معلومات الحساب بنجاح!", "success");
+    closeAccountModal();
 };
 
 window.closeAccountModal = function () {

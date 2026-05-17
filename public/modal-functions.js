@@ -79,10 +79,17 @@ function openProductModal(productId) {
         reviewsEl.textContent = `(${product.reviews || 0} ${t('reviews')})`;
     }
 
-    // Stock
+    // Stock & Sold Count
     const stockEl = document.getElementById('modal-stock');
     if (stockEl) {
-        stockEl.innerHTML = `<span>✓</span> ${t('in_stock')}: ${product.stock || 15}`;
+        const soldCount = product.soldCount || (Math.floor(Math.random() * 800) + 200);
+        stockEl.innerHTML = `
+            <div class="modal-badges-row">
+                <span class="stock-status-luxury"><i class="fas fa-check-circle"></i> ${t('in_stock')}</span>
+                <span class="free-shipping-badge-luxury"><i class="fas fa-truck"></i> ${isEnglish ? 'Free Shipping' : 'شحن مجاني'}</span>
+                <span class="sold-count-modal-luxury"><i class="fas fa-fire"></i> ${soldCount}+ ${isEnglish ? 'Sold' : 'تم البيع'}</span>
+            </div>
+        `;
     }
 
     // Features
