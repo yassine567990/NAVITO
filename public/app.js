@@ -752,11 +752,8 @@ window.handleSaveAccountInfo = async function () {
                 const { error } = await window.supabase
                     .from('profiles')
                     .update({
-                        full_name: user.fullname,
-                        phone: user.phone,
-                        city: user.city,
-                        street: user.street,
-                        zip: user.zip
+                        fullname: user.fullname,
+                        phone: user.phone
                     })
                     .eq('id', session.user.id);
                     
