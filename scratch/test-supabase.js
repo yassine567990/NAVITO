@@ -19,11 +19,11 @@ async function runTest() {
         ],
         total_amount: 500.00,
         shipping_address: {
-            fullname: 'Yassine Sabiri (تجربة آلية)',
-            address: 'tighmt - شارع اختبار الأدمن',
-            city: 'TATA',
-            postal: '84000',
-            phone: '0641095243'
+            fullname: 'John Doe (Test Account)',
+            address: '123 Main Street',
+            city: 'Casablanca',
+            postal: '20000',
+            phone: '0600000000'
         },
         payment_method: 'Cash on Delivery',
         status: 'Pending'

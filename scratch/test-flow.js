@@ -75,12 +75,12 @@ if (!fs.existsSync(screenshotDir)) {
 
         // Step 7: Fill out the Shipping Form
         console.log('📝 Filling out shipping form...');
-        await page.type('#name', 'Yassine Sabiri');
-        await page.type('#email', 'yassinesabiri2003@gmail.com');
-        await page.type('#phone', '0641095243');
-        await page.type('#address', 'tighmt');
-        await page.type('#city', 'TATA');
-        await page.type('#postal', '84000');
+        await page.type('#name', 'John Doe');
+        await page.type('#email', 'john.doe@example.com');
+        await page.type('#phone', '0600000000');
+        await page.type('#address', '123 Main Street');
+        await page.type('#city', 'Casablanca');
+        await page.type('#postal', '20000');
         await page.screenshot({ path: path.join(screenshotDir, '08_shipping_form_filled.png') });
         console.log('📸 Saved: 08_shipping_form_filled.png');
 
