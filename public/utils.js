@@ -205,6 +205,35 @@ const Utils = {
     /**
      * الطلبات (Orders)
      */
+    /**
+     * ضمان وجود سطر في جدول profiles للمستخدم الحالي
+     * يمنع خطأ foreign key عند إنشاء الطلبات
+     */
+    ensureProfile: async function (userId, metadata) {
+        if (!userId) return;
+        try {
+            const { data: existing } = await window.supabase
+                .from('profiles')
+                .select('id')
+                .eq('id', userId)
+                .maybeSingle();
+
+            if (!existing) {
+                await window.supabase
+                    .from('profiles')
+                    .insert([{
+                        id: userId,
+                        fullname: metadata?.fullname || metadata?.full_name || '',
+                        phone: metadata?.phone || '',
+                        role: 'user'
+                    }]);
+                console.log('✅ Profile row created for user:', userId);
+            }
+        } catch (e) {
+            console.warn('⚠️ ensureProfile fallback — profile may already exist:', e.message);
+        }
+    },
+
     createOrder: async function (orderData) {
         let userId = null;
         let session = await this.getSession();
@@ -232,6 +261,10 @@ const Utils = {
         if (!userId) {
             throw new Error('يجب تسجيل الدخول أولاً');
         }
+
+        // Ensure profile exists before inserting order (prevents FK constraint violation)
+        const userMeta = session?.user?.user_metadata || {};
+        await this.ensureProfile(userId, userMeta);
 
         const payload = {
             user_id: userId,
@@ -431,6 +464,11 @@ if (window.supabase) {
         if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session) {
             localStorage.setItem('navito_session', JSON.stringify(session));
             
+            // Ensure profile row exists (critical for Google OAuth users)
+            if (event === 'SIGNED_IN') {
+                await Utils.ensureProfile(session.user.id, session.user.user_metadata);
+            }
+
             // Sync user data if missing or changed
             const currentUser = localStorage.getItem('navito_current_user');
             if (!currentUser || event === 'SIGNED_IN') {
