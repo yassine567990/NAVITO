@@ -216,57 +216,177 @@ const Utils = {
      */
     ensureProfile: async function (userId, metadata) {
         if (!userId) return;
-        try {
-            const { error } = await window.supabase
-                .from('profiles')
-                .upsert({
-                    id: userId,
-                    fullname: metadata?.fullname || metadata?.full_name || '',
-                    phone: metadata?.phone || '',
-                    role: 'user'
-                }, { onConflict: 'id', ignoreDuplicates: true });
 
-            if (error && !error.message.includes('duplicate') && !error.message.includes('already exists')) {
-                console.warn('⚠️ ensureProfile warning:', error.message);
-            } else {
-                console.log('✅ Profile ensured for user:', userId);
+        // Step 1: Check if profile already exists
+        try {
+            const { data: existing } = await window.supabase
+                .from('profiles')
+                .select('id')
+                .eq('id', userId)
+                .maybeSingle();
+
+            if (existing) {
+                console.log('✅ Profile exists for:', userId);
+                return;
             }
         } catch (e) {
-            console.warn('⚠️ ensureProfile fallback:', e.message);
+            console.warn('⚠️ ensureProfile SELECT error:', e.message);
         }
+
+        const profileData = {
+            id: userId,
+            fullname: metadata?.fullname || metadata?.full_name || '',
+            phone: metadata?.phone || '',
+            role: 'user'
+        };
+
+        // Step 2: Try direct upsert (works if RLS allows it)
+        let directSuccess = false;
+        try {
+            const { error: upsertErr } = await window.supabase
+                .from('profiles')
+                .upsert(profileData, { onConflict: 'id' });
+
+            if (!upsertErr) {
+                directSuccess = true;
+                console.log('✅ Profile created via direct upsert for:', userId);
+            } else {
+                console.warn('⚠️ Direct upsert failed:', upsertErr.message);
+            }
+        } catch (e) {
+            console.warn('⚠️ Direct upsert exception:', e.message);
+        }
+
+        // Step 3: Fallback — call serverless API (uses service_role, bypasses RLS safely)
+        if (!directSuccess) {
+            try {
+                const { data: { session } } = await window.supabase.auth.getSession();
+                const token = session?.access_token;
+
+                if (token) {
+                    const apiRes = await fetch('/api/ensure-profile', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({
+                            fullname: profileData.fullname,
+                            phone: profileData.phone
+                        })
+                    });
+
+                    if (apiRes.ok) {
+                        const result = await apiRes.json();
+                        console.log('✅ Profile created via API:', result.message);
+                        directSuccess = true;
+                    } else {
+                        const errBody = await apiRes.text();
+                        console.error('❌ API ensure-profile failed:', errBody);
+                    }
+                } else {
+                    console.warn('⚠️ No session token available for API call');
+                }
+            } catch (apiErr) {
+                console.error('❌ API ensure-profile exception:', apiErr.message);
+            }
+        }
+
+        // Step 4: Final verification
+        try {
+            const { data: verify } = await window.supabase
+                .from('profiles')
+                .select('id')
+                .eq('id', userId)
+                .maybeSingle();
+
+            if (verify) {
+                console.log('✅ Profile verified for:', userId);
+                return;
+            }
+        } catch (e) {
+            console.warn('⚠️ Verification SELECT error:', e.message);
+        }
+
+        // If we got directSuccess but SELECT fails (RLS on SELECT), don't throw
+        if (directSuccess) {
+            console.log('✅ Profile was created (SELECT blocked by RLS but insert succeeded)');
+            return;
+        }
+
+        console.error('❌ Profile creation failed for:', userId);
+        throw new Error('فشل في إنشاء الملف الشخصي. يرجى تسجيل الخروج وإعادة الدخول.');
     },
 
     createOrder: async function (orderData) {
         let userId = null;
-        let session = await this.getSession();
-        
-        if (session && session.user) {
-            userId = session.user.id;
-        } else {
-            // Fallback: Try reading from localStorage to bypass Supabase client hydration lag/session expiry
+        let userMeta = {};
+
+        // Step 1: Try to get/refresh the active Supabase session
+        // Step 1: Try to get/refresh the active Supabase session
+        try {
+            // First try to refresh the session to make sure it's valid
+            const { data: refreshData } = await window.supabase.auth.refreshSession();
+            if (refreshData?.session?.user) {
+                userId = refreshData.session.user.id;
+                userMeta = refreshData.session.user.user_metadata || {};
+                // Update stored session with refreshed one
+                localStorage.setItem('navito_session', JSON.stringify(refreshData.session));
+                console.log('✅ createOrder: using refreshed session user_id:', userId);
+            } else {
+                // Fallback to getSession if refresh fails
+                const { data: { session } } = await window.supabase.auth.getSession();
+                if (session && session.user) {
+                    userId = session.user.id;
+                    userMeta = session.user.user_metadata || {};
+                    console.log('✅ createOrder: using session user_id:', userId);
+                }
+            }
+        } catch (e) {
+            console.warn('⚠️ createOrder: session retrieval failed:', e.message);
+        }
+
+        // Step 2: Fallback to localStorage if no active Supabase session
+        if (!userId) {
             const sessionStr = localStorage.getItem('navito_session');
-            const currentUserStr = localStorage.getItem('navito_current_user');
             if (sessionStr) {
                 try {
                     const parsedSession = JSON.parse(sessionStr);
-                    userId = parsedSession.user?.id || parsedSession.user_id;
+                    userId = parsedSession.user?.id;
+                    userMeta = parsedSession.user?.user_metadata || {};
+                    if (userId) console.log('✅ createOrder: using localStorage session user_id:', userId);
                 } catch (e) {}
             }
-            if (!userId && currentUserStr) {
+        }
+
+        // Step 3: Fallback to navito_current_user (but ONLY if it has a valid UUID)
+        if (!userId) {
+            const currentUserStr = localStorage.getItem('navito_current_user');
+            if (currentUserStr) {
                 try {
                     const parsedUser = JSON.parse(currentUserStr);
-                    userId = parsedUser.id || parsedUser._id || (parsedUser.role === 'admin' ? '00000000-0000-0000-0000-000000000000' : null);
+                    // Only use if it looks like a valid UUID (36 chars with dashes)
+                    if (parsedUser.id && parsedUser.id.length === 36 && parsedUser.id.includes('-')) {
+                        userId = parsedUser.id;
+                        userMeta = { fullname: parsedUser.fullname, phone: parsedUser.phone };
+                        console.log('✅ createOrder: using current_user id:', userId);
+                    }
                 } catch (e) {}
             }
         }
 
         if (!userId) {
+            console.error('❌ createOrder: No valid user_id found!');
             throw new Error('يجب تسجيل الدخول أولاً');
         }
 
-        // Ensure profile exists before inserting order (prevents FK constraint violation)
-        const userMeta = session?.user?.user_metadata || {};
-        await this.ensureProfile(userId, userMeta);
+        // Ensure profile exists before inserting order
+        try {
+            await this.ensureProfile(userId, userMeta);
+        } catch (profileError) {
+            console.error('❌ createOrder: ensureProfile failed:', profileError.message);
+            throw new Error('خطأ في الحساب: يرجى تسجيل الخروج وإعادة تسجيل الدخول ثم المحاولة مجدداً');
+        }
 
         const payload = {
             user_id: userId,
@@ -276,6 +396,8 @@ const Utils = {
             payment_method: orderData.paymentMethod || 'Cash on Delivery',
             status: 'Pending'
         };
+
+        console.log('📦 createOrder: inserting order with user_id:', userId);
 
         const { data, error } = await window.supabase
             .from('orders')
