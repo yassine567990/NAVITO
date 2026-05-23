@@ -71,7 +71,11 @@ const Utils = {
     },
 
     logout: async function (redirectUrl = 'index.html') {
-        await window.supabase.auth.signOut();
+        try {
+            await window.supabase.auth.signOut();
+        } catch (e) {
+            console.warn('⚠️ Supabase signOut error (ignoring to proceed with local logout):', e.message);
+        }
         localStorage.removeItem('navito_current_user');
         localStorage.removeItem('navito_session');
         localStorage.removeItem('admin_token');

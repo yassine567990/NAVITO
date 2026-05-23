@@ -1,9 +1,10 @@
 #!/bin/bash
 git add -A
-git commit -m "fix: prevent automatic admin logout in dashboard by retaining admin user metadata
+git commit -m "fix: robust logout logic and smart navbar display name fallbacks
 
-- Updated isLoggedIn in public/utils.js:
-  * Ensures that when adminToken is active, the admin's 'navito_current_user' is never cleared or cleaned up by the stale state logic.
-  * This completely resolves the admin login loop where entering admin@gmail.com and password 0000 would login and immediately logout/redirect back to login.html."
+- Updated public/utils.js:
+  * Wrapped Supabase signOut in try-catch block inside Utils.logout() so network or session failures never block client-side session deletion and redirect.
+- Updated public/app.js:
+  * Enhanced UI.updateAuth(): if the user has no fullname set, it smartly displays their email prefix or phone number instead of generic 'My Account' (حسابي), providing a highly premium personalized UX."
 git push origin main
 echo "✅ Done! Pushed to GitHub."

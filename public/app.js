@@ -31,7 +31,9 @@ window.NAVITO = {
 
             if (isLoggedIn) {
                 const user = JSON.parse(localStorage.getItem('navito_current_user') || '{}');
-                const name = user.fullname ? user.fullname.split(' ')[0] : (typeof t === 'function' ? t('account') : 'حسابي');
+                const name = user.fullname && user.fullname.trim() ? user.fullname.split(' ')[0] : 
+                             (user.email ? user.email.split('@')[0] : 
+                             (user.phone ? user.phone : (typeof t === 'function' ? t('account') : 'حسابي')));
                 if (btn) {
                     btn.querySelector('span').textContent = name;
                     btn.classList.add('logged-in');
