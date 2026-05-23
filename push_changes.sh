@@ -1,9 +1,9 @@
 #!/bin/bash
 git add -A
-git commit -m "fix: self-healing session and robust auth state listener logic for Google OAuth
+git commit -m "fix: prevent automatic admin logout in dashboard by retaining admin user metadata
 
-- Updated public/utils.js:
-  * Enhanced isLoggedIn(): if navito_session exists but navito_current_user is missing (e.g. during OAuth return), it immediately self-heals by parsing the active session and reconstructing the user object on-the-fly, returning true. This prevents session loss.
-  * Wrapped ensureProfile() in a try-catch within onAuthStateChange: any backend database delay/error during background profile checks will never block session activation or UI rendering."
+- Updated isLoggedIn in public/utils.js:
+  * Ensures that when adminToken is active, the admin's 'navito_current_user' is never cleared or cleaned up by the stale state logic.
+  * This completely resolves the admin login loop where entering admin@gmail.com and password 0000 would login and immediately logout/redirect back to login.html."
 git push origin main
 echo "✅ Done! Pushed to GitHub."

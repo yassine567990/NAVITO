@@ -14,6 +14,7 @@ const Utils = {
         const adminToken = localStorage.getItem('admin_token');
         let currentUserStr = localStorage.getItem('navito_current_user');
 
+        // If adminToken is present, consider logged in immediately and bypass Supabase checks
         if (adminToken) return true;
 
         if (sessionStr) {
@@ -45,9 +46,16 @@ const Utils = {
             }
         }
         
-        // If no session but currentUser exists, clear it to avoid stale state
+        // If no session but currentUser exists, clear it to avoid stale state (only for regular users)
         if (currentUserStr) {
-            localStorage.removeItem('navito_current_user');
+            try {
+                const parsed = JSON.parse(currentUserStr);
+                if (parsed.role !== 'admin') {
+                    localStorage.removeItem('navito_current_user');
+                }
+            } catch (e) {
+                localStorage.removeItem('navito_current_user');
+            }
         }
         return false;
     },
