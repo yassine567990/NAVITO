@@ -35,6 +35,26 @@ const Utils = {
 
     // Initial Session Check
     async init() {
+        // Automatically clear admin session in regular storefront pages to allow guest shopping
+        const isStorefront = !window.location.pathname.includes('admin.html');
+        if (isStorefront) {
+            const currentUserStr = localStorage.getItem('navito_current_user');
+            if (currentUserStr) {
+                try {
+                    const parsed = JSON.parse(currentUserStr);
+                    if (parsed.role === 'admin' || localStorage.getItem('admin_token')) {
+                        localStorage.removeItem('admin_token');
+                        localStorage.removeItem('navito_current_user');
+                        localStorage.removeItem('navito_session');
+                        console.log('🧹 Storefront initialized: Cleared admin session to default to guest shopping.');
+                    }
+                } catch (e) {}
+            } else if (localStorage.getItem('admin_token')) {
+                localStorage.removeItem('admin_token');
+                localStorage.removeItem('navito_session');
+            }
+        }
+
         const sessionStr = localStorage.getItem('navito_session');
         if (sessionStr) {
             try {
