@@ -5,17 +5,29 @@
 
 const Utils = {
 
+    escapeHtml: function (str) {
+        return String(str ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+    },
+
+    getProductId: function (product) {
+        return product?._id || product?.id || null;
+    },
+
+    isProduction: function () {
+        const h = window.location.hostname;
+        return h !== 'localhost' && h !== '127.0.0.1' && !h.endsWith('.local');
+    },
+
     /**
      * مساعدات المصادقة (Authentication Helpers) — Supabase Auth
      */
     isLoggedIn: function () {
-        // Robust check for Supabase session and user data
         const sessionStr = localStorage.getItem('navito_session');
-        const adminToken = localStorage.getItem('admin_token');
         let currentUserStr = localStorage.getItem('navito_current_user');
-
-        // If adminToken is present, consider logged in immediately and bypass Supabase checks
-        if (adminToken) return true;
 
         if (sessionStr) {
             try {
@@ -78,7 +90,6 @@ const Utils = {
         }
         localStorage.removeItem('navito_current_user');
         localStorage.removeItem('navito_session');
-        localStorage.removeItem('admin_token');
         window.location.href = redirectUrl;
     },
 
@@ -91,18 +102,16 @@ const Utils = {
             if (currentUserStr) {
                 try {
                     const parsed = JSON.parse(currentUserStr);
-                    if (parsed.role === 'admin' || localStorage.getItem('admin_token')) {
-                        localStorage.removeItem('admin_token');
+                    if (parsed.role === 'admin') {
                         localStorage.removeItem('navito_current_user');
                         localStorage.removeItem('navito_session');
-                        console.log('🧹 Storefront initialized: Cleared admin session to default to guest shopping.');
+                        console.log('🧹 Storefront: admin session cleared for guest shopping.');
                     }
                 } catch (e) {}
-            } else if (localStorage.getItem('admin_token')) {
-                localStorage.removeItem('admin_token');
-                localStorage.removeItem('navito_session');
             }
         }
+        localStorage.removeItem('admin_token');
+        localStorage.removeItem('navito_rem_pass');
 
         const sessionStr = localStorage.getItem('navito_session');
         if (sessionStr) {
@@ -211,7 +220,7 @@ const Utils = {
         const { data, error } = await window.supabase.auth.signInWithOAuth({
             provider: 'google',
             options: {
-                redirectTo: window.location.origin + (window.location.pathname.includes('/public/') ? '/public/index.html' : '/index.html')
+                redirectTo: `${window.location.origin}/index.html`
             }
         });
         if (error) throw new Error(error.message);
@@ -247,6 +256,7 @@ const Utils = {
      * إدارة المنتجات — للأدمن فقط (Admin Product Management)
      */
     createProduct: async function (productData) {
+        if (!this.isAdmin()) throw new Error('غير مصرح');
         const { data, error } = await window.supabase
             .from('products')
             .insert([productData])
@@ -257,6 +267,7 @@ const Utils = {
     },
 
     updateProduct: async function (id, productData) {
+        if (!this.isAdmin()) throw new Error('غير مصرح');
         const { data, error } = await window.supabase
             .from('products')
             .update(productData)
@@ -268,6 +279,7 @@ const Utils = {
     },
 
     deleteProduct: async function (id) {
+        if (!this.isAdmin()) throw new Error('غير مصرح');
         const { error } = await window.supabase
             .from('products')
             .delete()
@@ -462,25 +474,45 @@ const Utils = {
             throw new Error('خطأ في الحساب: يرجى تسجيل الخروج وإعادة تسجيل الدخول ثم المحاولة مجدداً');
         }
 
-        const payload = {
-            user_id: userId,
-            items: orderData.orderItems,
-            total_amount: orderData.totalAmount,
-            shipping_address: orderData.shippingAddress,
-            payment_method: orderData.paymentMethod || 'Cash on Delivery',
-            status: 'Pending'
+        const { data: { session } } = await window.supabase.auth.getSession();
+        const token = session?.access_token;
+        if (!token) {
+            throw new Error('يجب تسجيل الدخول أولاً لإتمام عملية الشراء.');
+        }
+
+        const apiRes = await fetch('/api/create-order', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+                orderItems: orderData.orderItems,
+                shippingAddress: orderData.shippingAddress,
+                paymentMethod: orderData.paymentMethod || 'Cash on Delivery',
+            }),
+        });
+
+        const result = await apiRes.json().catch(() => ({}));
+        if (!apiRes.ok) {
+            throw new Error(result.error || 'فشل تسجيل الطلب');
+        }
+
+        return {
+            ...result,
+            orderId: result.orderId || result.id,
         };
+    },
 
-        console.log('📦 createOrder: inserting order with user_id:', userId);
-
-        const { data, error } = await window.supabase
-            .from('orders')
-            .insert([payload])
-            .select()
-            .single();
-
-        if (error) throw new Error(error.message);
-        return data;
+    trackOrder: async function (orderId, phone) {
+        const apiRes = await fetch('/api/track-order', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ orderId, phone }),
+        });
+        const result = await apiRes.json().catch(() => ({}));
+        if (!apiRes.ok) throw new Error(result.error || 'تعذر تتبع الطلب');
+        return result;
     },
 
     getMyOrders: async function () {
@@ -501,7 +533,7 @@ const Utils = {
             if (!userId && currentUserStr) {
                 try {
                     const parsedUser = JSON.parse(currentUserStr);
-                    userId = parsedUser.id || parsedUser._id || (parsedUser.role === 'admin' ? '00000000-0000-0000-0000-000000000000' : null);
+                    userId = parsedUser.id || parsedUser._id || null;
                 } catch (e) {}
             }
         }
@@ -519,6 +551,7 @@ const Utils = {
     },
 
     getAllOrders: async function () {
+        if (!this.isAdmin()) throw new Error('غير مصرح');
         const { data, error } = await window.supabase
             .from('orders')
             .select('*, profiles(fullname, email)')
@@ -617,8 +650,14 @@ const Utils = {
     },
 
     formatCurrency: function (amount) {
-        const currency = typeof window.t === 'function' ? window.t('currency') : (this.isEnglish() ? 'SAR' : 'ر.س');
-        return `${currency} ${Number(amount).toFixed(2)}`;
+        const currency = typeof window.t === 'function' ? window.t('currency') : 'MAD';
+        const n = Number(amount);
+        return `${currency} ${(Number.isFinite(n) ? n : 0).toFixed(2)}`;
+    },
+
+    formatPrice: function (price) {
+        const n = Number(price);
+        return (Number.isFinite(n) ? n : 0).toFixed(2);
     },
 
     /**
@@ -701,7 +740,6 @@ if (window.supabase) {
         } else if (event === 'SIGNED_OUT') {
             localStorage.removeItem('navito_session');
             localStorage.removeItem('navito_current_user');
-            localStorage.removeItem('admin_token');
             
             // Trigger UI update
             if (window.NAVITO && window.NAVITO.UI && window.NAVITO.UI.updateAuth) {

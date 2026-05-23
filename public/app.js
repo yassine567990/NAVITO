@@ -184,7 +184,8 @@ window.NAVITO = {
         filterByCategory: function(category) {
             NAVITO.State.currentCategory = category;
             document.querySelectorAll('.category-pill').forEach(pill => {
-                pill.classList.toggle('active', pill.textContent === category || (category === 'الكل' && pill.getAttribute('data-i18n') === 'category_all'));
+                const pillCat = pill.getAttribute('data-category') || pill.textContent;
+                pill.classList.toggle('active', pillCat === category);
             });
             const term = document.getElementById('main-search-input')?.value.toLowerCase() || '';
             NAVITO.Logic.applyFilters(term, category);
@@ -209,16 +210,21 @@ window.NAVITO = {
         // قالب بطاقة المنتج
         productCard: function(product) {
             const isEnglish = (NAVITO.State.currentLang === 'en');
-            const name = isEnglish ? (product.nameEn || product.name) : (product.name_ar || product.name);
+            const esc = (typeof Utils !== 'undefined' && Utils.escapeHtml) ? Utils.escapeHtml.bind(Utils) : (s) => String(s ?? '');
+            const fmt = (typeof Utils !== 'undefined' && Utils.formatPrice) ? Utils.formatPrice.bind(Utils) : (p) => (Number(p) || 0).toFixed(2);
+            const name = isEnglish ? (product.nameEn || product.name_en || product.name) : (product.name_ar || product.name);
             const rating = product.rating || 4.5;
             const currency = (typeof t === 'function' ? t('currency') : 'MAD');
-            const discount = product.oldPrice ? Math.round(((product.oldPrice - product.price) / product.oldPrice) * 100) : 0;
-            const soldCount = product.soldCount || (Math.floor(Math.random() * 800) + 200);
+            const price = Number(product.price) || 0;
+            const oldPrice = Number(product.oldPrice) || 0;
+            const discount = oldPrice > price ? Math.round(((oldPrice - price) / oldPrice) * 100) : 0;
+            const soldCount = product.soldCount || 0;
+            const pid = product._id || product.id;
 
             return `
-                <div class="store-product-card" data-id="${product._id || product.id}">
+                <div class="store-product-card" data-id="${esc(pid)}">
                     <div class="store-card-img-wrapper">
-                        <img class="store-card-img" src="${product.image}" alt="${name}" loading="lazy">
+                        <img class="store-card-img" src="${esc(product.image)}" alt="${esc(name)}" loading="lazy">
                         ${discount > 0 ? `<div class="discount-badge-luxury">-${discount}%</div>` : ''}
                         
                         <div class="product-card-actions">
@@ -264,21 +270,26 @@ window.NAVITO = {
         // قالب عنصر العربة
         cartItem: function(item) {
             const isEnglish = (NAVITO.State.currentLang === 'en');
-            const name = isEnglish ? (item.nameEn || item.name) : item.name;
+            const esc = (typeof Utils !== 'undefined' && Utils.escapeHtml) ? Utils.escapeHtml.bind(Utils) : (s) => String(s ?? '');
+            const fmt = (typeof Utils !== 'undefined' && Utils.formatPrice) ? Utils.formatPrice.bind(Utils) : (p) => (Number(p) || 0).toFixed(2);
+            const name = isEnglish ? (item.nameEn || item.name_en || item.name) : item.name;
             const currency = (typeof t === 'function' ? t('currency') : 'MAD');
+            const itemKey = (typeof CartManager !== 'undefined' && CartManager._itemKey) ? CartManager._itemKey(item) : (item._id || item.id || item.name);
+            const price = Number(item.price) || 0;
+            const qty = parseInt(item.quantity, 10) || 1;
             return `
                 <div class="cart-item">
-                    <img src="${item.image}" alt="${name}">
+                    <img src="${esc(item.image)}" alt="${esc(name)}">
                     <div class="cart-item-details">
-                        <div class="cart-item-title">${name} ${item.isBundle ? '<span class="badge-bundle-small">Bundle</span>' : ''}</div>
-                        <div class="cart-item-price">${currency} ${item.price.toFixed(2)} × ${item.quantity}</div>
+                        <div class="cart-item-title">${esc(name)} ${item.isBundle ? '<span class="badge-bundle-small">Bundle</span>' : ''}</div>
+                        <div class="cart-item-price">${currency} ${fmt(price)} × ${qty}</div>
                         <div class="cart-item-controls">
-                            <button class="qty-btn navito-action-qty" data-name="${item.name}" data-delta="-1">${item.quantity === 1 ? '<i class="fas fa-trash-alt" style="font-size:0.8rem;"></i>' : '-'}</button>
-                            <span style="min-width:30px; text-align:center;">${item.quantity}</span>
-                            <button class="qty-btn navito-action-qty" data-name="${item.name}" data-delta="1">+</button>
+                            <button class="qty-btn navito-action-qty" data-item-key="${esc(itemKey)}" data-delta="-1">${qty === 1 ? '<i class="fas fa-trash-alt" style="font-size:0.8rem;"></i>' : '-'}</button>
+                            <span style="min-width:30px; text-align:center;">${qty}</span>
+                            <button class="qty-btn navito-action-qty" data-item-key="${esc(itemKey)}" data-delta="1">+</button>
                         </div>
                     </div>
-                    <button class="navito-action-remove" data-name="${item.name}" style="background:none; border:none; color:var(--danger-color); cursor:pointer; padding:0.5rem; font-size:1.2rem;">✕</button>
+                    <button class="navito-action-remove" data-item-key="${esc(itemKey)}" style="background:none; border:none; color:var(--danger-color); cursor:pointer; padding:0.5rem; font-size:1.2rem;">✕</button>
                 </div>`;
         }
     },
@@ -295,13 +306,14 @@ window.NAVITO = {
                     if (typeof handleAccountClick === 'function') handleAccountClick();
                 }
 
-                // نقرة التفاصيل (الزر أو الصورة)
-                if (target.closest('.navito-action-details') || target.closest('.view-details-pill') || target.closest('.store-card-img-wrapper')) {
+                // نقرة التفاصيل (زر العين أو الصورة فقط — لا تتداخل مع أزرار الشراء)
+                if (target.closest('.navito-action-details') || target.closest('.view-details-pill') ||
+                    (target.closest('.store-card-img') && !target.closest('.product-card-actions'))) {
                     const container = target.closest('.store-product-card');
                     const id = container ? container.getAttribute('data-id') : null;
                     if (id && typeof openProductModal === 'function') openProductModal(id);
                 }
-                
+
                 // نقرة الشراء الآن
                 if (target.closest('.navito-action-buy') || target.id === 'modal-buy-now') {
                     const btn = target.closest('.navito-action-buy') || target;
@@ -337,14 +349,16 @@ window.NAVITO = {
                 if (target.closest('.navito-action-qty')) {
                     const btn = target.closest('.navito-action-qty');
                     if (typeof CartManager !== 'undefined') {
-                        CartManager.updateQuantity(btn.getAttribute('data-name'), parseInt(btn.getAttribute('data-delta')));
+                        const key = btn.getAttribute('data-item-key') || btn.getAttribute('data-name');
+                        CartManager.updateQuantity(key, parseInt(btn.getAttribute('data-delta'), 10));
                     }
                 }
 
-                // زر حذف عنصر من العربة
                 if (target.closest('.navito-action-remove')) {
                     if (typeof CartManager !== 'undefined') {
-                        CartManager.removeItem(target.closest('.navito-action-remove').getAttribute('data-name'));
+                        const rm = target.closest('.navito-action-remove');
+                        const key = rm.getAttribute('data-item-key') || rm.getAttribute('data-name');
+                        CartManager.removeItem(key);
                     }
                 }
                 
@@ -417,8 +431,10 @@ window.NAVITO = {
             
             // تبويبات التصنيفات
             document.addEventListener('click', (e) => {
-                if (e.target.classList.contains('category-pill')) {
-                    NAVITO.Logic.filterByCategory(e.target.textContent);
+                const pill = e.target.closest('.category-pill');
+                if (pill) {
+                    const cat = pill.getAttribute('data-category') || pill.textContent;
+                    NAVITO.Logic.filterByCategory(cat);
                 }
             });
         },
@@ -490,24 +506,33 @@ async function getLocalStoreProducts() {
         console.warn('[NAVITO] فشل جلب المنتجات من السحابة:', e);
     }
 
-    // Get Local Products
-    const localProducts = JSON.parse(localStorage.getItem('admin_products_prod_v1') || '[]');
-    
-    // Normalize Cloud Products (Supabase uses snake_case)
-    const normalizedCloud = cloudProducts.map(p => ({
-        ...p,
-        _id: p.id,
-        nameEn: p.name_en || p.nameEn,
-        descriptionEn: p.description_en || p.descriptionEn,
-        isActive: p.is_active !== undefined ? p.is_active : true
-    }));
+    const isProd = typeof Utils !== 'undefined' && Utils.isProduction && Utils.isProduction();
+    let localProducts = [];
+    if (!isProd) {
+        try {
+            localProducts = JSON.parse(localStorage.getItem('admin_products_prod_v1') || '[]');
+        } catch (e) {
+            localProducts = [];
+        }
+    }
 
-    // Merge: Cloud products take precedence. Filter out local duplicates.
+    const normalizedCloud = cloudProducts
+        .filter(p => p.is_active !== false)
+        .map(p => ({
+            ...p,
+            _id: p.id,
+            nameEn: p.name_en || p.nameEn,
+            descriptionEn: p.description_en || p.descriptionEn,
+            isActive: p.is_active !== undefined ? p.is_active : true
+        }));
+
     const cloudIds = new Set(normalizedCloud.map(p => String(p.id)));
-    const combined = [
-        ...normalizedCloud,
-        ...localProducts.filter(p => !cloudIds.has(String(p.id)) && !cloudIds.has(String(p._id)))
-    ];
+    const combined = isProd
+        ? normalizedCloud
+        : [
+            ...normalizedCloud,
+            ...localProducts.filter(p => !cloudIds.has(String(p.id)) && !cloudIds.has(String(p._id)))
+        ];
 
     window.allStoreProducts = combined;
     return combined;
@@ -539,8 +564,9 @@ window.renderCheckoutPage = function () {
     let html = '';
     items.forEach(item => {
         const price = parseFloat(item.price) || 0;
-        const qty = parseInt(item.quantity) || 1;
+        const qty = parseInt(item.quantity, 10) || 1;
         const itemTotal = price * qty;
+        const itemKey = CartManager._itemKey ? CartManager._itemKey(item) : (item._id || item.id || item.name);
 
         html += `
             <div class="order-item">
@@ -549,11 +575,11 @@ window.renderCheckoutPage = function () {
                     <div class="item-name">${item.name || 'Product'}</div>
                     <div class="item-quantity">
                         <div class="cart-item-controls" style="margin: 0.5rem 0; display: flex; align-items: center; gap: 10px;">
-                            <button class="qty-btn navito-action-qty" data-name="${item.name}" data-delta="-1" style="width:24px; height:24px; border-radius:4px; border:1px solid var(--border-color); background:var(--bg-secondary); cursor:pointer; display:flex; align-items:center; justify-content:center;">
+                            <button class="qty-btn navito-action-qty" data-item-key="${itemKey}" data-delta="-1" style="width:24px; height:24px; border-radius:4px; border:1px solid var(--border-color); background:var(--bg-secondary); cursor:pointer; display:flex; align-items:center; justify-content:center;">
                                 ${qty === 1 ? '<i class="fas fa-trash-alt" style="font-size:0.7rem; color:var(--danger-color);"></i>' : '-'}
                             </button>
                             <span style="font-weight:700;">${qty}</span>
-                            <button class="qty-btn navito-action-qty" data-name="${item.name}" data-delta="1" style="width:24px; height:24px; border-radius:4px; border:1px solid var(--border-color); background:var(--bg-secondary); cursor:pointer;">+</button>
+                            <button class="qty-btn navito-action-qty" data-item-key="${itemKey}" data-delta="1" style="width:24px; height:24px; border-radius:4px; border:1px solid var(--border-color); background:var(--bg-secondary); cursor:pointer;">+</button>
                         </div>
                         <span style="opacity: 0.8;">${currency} ${price.toFixed(2)}</span>
                     </div>
@@ -600,7 +626,9 @@ window.handleCheckout = async function (e) {
 
     const orderData = {
         orderItems: (typeof CartManager !== 'undefined' ? CartManager.items : []).map(item => ({
-            product: item._id, // تأكد أن ID المنتج قادم من الخادم
+            product: item._id || item.id,
+            _id: item._id || item.id,
+            id: item.id || item._id,
             name: item.name,
             price: item.price,
             quantity: item.quantity,
@@ -622,7 +650,9 @@ window.handleCheckout = async function (e) {
             const result = await Utils.createOrder(orderData);
             if (typeof CartManager !== 'undefined') CartManager.clear();
             if (typeof showToast === 'function') {
-                const msg = (typeof t === 'function' ? t('order_success_msg') : 'تم تسجيل طلبك بنجاح! رقم الطلب: ') + result.orderId;
+                const orderRef = result.orderId || result.id || '';
+                const shortRef = orderRef ? String(orderRef).slice(0, 8).toUpperCase() : '';
+                const msg = (typeof t === 'function' ? t('order_success_msg') : 'تم تسجيل طلبك بنجاح! رقم الطلب: ') + shortRef;
                 showToast(msg, 'success');
             }
             setTimeout(() => window.location.href = 'index.html', 3000);
@@ -886,8 +916,6 @@ function playCartSound() {
 // ─────────────────────────────────────────────
 // تهيئة التطبيق - تعمل بعد تحميل كافة السكريبتات
 // ─────────────────────────────────────────────
-// Use window.addEventListener('load') instead of DOMContentLoaded
-// so that add-sample-products.js has already seeded the localStorage
 window.addEventListener('load', () => {
     NAVITO.Init.app();
 });

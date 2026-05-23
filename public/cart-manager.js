@@ -7,6 +7,14 @@
 const CartManager = {
     items: [],
 
+    _itemKey(item) {
+        if (typeof Utils !== 'undefined' && Utils.getProductId) {
+            const id = Utils.getProductId(item);
+            if (id) return String(id);
+        }
+        return item._id || item.id || item.name;
+    },
+
     /** Load saved cart from localStorage */
     init() {
         try {
@@ -22,11 +30,9 @@ const CartManager = {
     save() {
         localStorage.setItem('navito_cart', JSON.stringify(this.items));
         this.updateBadges();
-        // Re-render cart sidebar
         if (typeof NAVITO !== 'undefined' && typeof NAVITO.UI.renderCart === 'function') {
             NAVITO.UI.renderCart();
         }
-        // Re-render checkout page if on it
         if (typeof window.renderCheckoutPage === 'function') {
             window.renderCheckoutPage();
         }
@@ -34,31 +40,58 @@ const CartManager = {
 
     /** Add a product to the cart (merges if already present) */
     addItem(product, btnElement = null, quantity = 1) {
-        const existing = this.items.find(i => i.name === product.name);
+        const key = this._itemKey(product);
+        const existing = this.items.find(i => this._itemKey(i) === key);
+        const stock = parseInt(product.stock, 10);
+        const qty = Math.max(1, parseInt(quantity, 10) || 1);
+
+        if (Number.isFinite(stock) && stock <= 0) {
+            if (typeof showToast === 'function') {
+                showToast(typeof t === 'function' ? t('out_of_stock') || 'نفد المخزون' : 'نفد المخزون', 'error');
+            }
+            return;
+        }
+        if (Number.isFinite(stock) && existing && existing.quantity + qty > stock) {
+            if (typeof showToast === 'function') {
+                showToast(`الكمية المتوفرة: ${stock}`, 'error');
+            }
+            return;
+        }
+
         if (existing) {
-            existing.quantity += quantity;
+            existing.quantity += qty;
         } else {
-            this.items.push({ ...product, quantity });
+            this.items.push({
+                ...product,
+                _id: product._id || product.id,
+                id: product.id || product._id,
+                quantity: qty,
+            });
         }
         this.save();
         this._animateButton(btnElement, product);
         this._pulseBadge();
     },
 
-    /** Remove item by name */
-    removeItem(productName) {
-        this.items = this.items.filter(i => i.name !== productName);
+    /** Remove item by key */
+    removeItem(itemKey) {
+        this.items = this.items.filter(i => this._itemKey(i) !== itemKey);
         this.save();
     },
 
     /** Update item quantity by delta. Removes if quantity reaches 0 */
-    updateQuantity(productName, delta) {
-        const item = this.items.find(i => i.name === productName);
+    updateQuantity(itemKey, delta) {
+        const item = this.items.find(i => this._itemKey(i) === itemKey);
         if (!item) return;
         item.quantity += delta;
         if (item.quantity <= 0) {
-            this.removeItem(productName);
+            this.removeItem(itemKey);
         } else {
+            const stock = parseInt(item.stock, 10);
+            if (Number.isFinite(stock) && item.quantity > stock) {
+                item.quantity = stock;
+                if (typeof showToast === 'function') showToast(`الكمية المتوفرة: ${stock}`, 'warning');
+            }
             this.save();
         }
     },
@@ -67,14 +100,14 @@ const CartManager = {
     getTotal() {
         return this.items.reduce((sum, i) => {
             const price = parseFloat(i.price) || 0;
-            const quantity = parseInt(i.quantity) || 0;
+            const quantity = parseInt(i.quantity, 10) || 0;
             return sum + (price * quantity);
         }, 0);
     },
 
     /** Get total item count */
     getCount() {
-        return this.items.reduce((sum, i) => sum + i.quantity, 0);
+        return this.items.reduce((sum, i) => sum + (parseInt(i.quantity, 10) || 0), 0);
     },
 
     /** Empty the cart */
@@ -97,16 +130,13 @@ const CartManager = {
         });
     },
 
-    /** Visual feedback on add-to-cart button */
     _animateButton(btn, product) {
         if (!btn) return;
         const orig = btn.innerHTML;
         btn.classList.add('btn-success', 'btn-pop-animation');
         btn.innerHTML = '<span style="font-weight:bold; font-size:1.2rem;">✓</span>';
 
-        // Particle effect
         if (typeof createParticles === 'function') createParticles(btn);
-        // Fly-to-cart animation
         if (product.image && typeof animateFlyToCart === 'function') animateFlyToCart(btn, product.image);
 
         setTimeout(() => {
@@ -115,16 +145,14 @@ const CartManager = {
         }, 1000);
     },
 
-    /** Pulse the cart badge on add */
     _pulseBadge() {
         const badge = document.getElementById('cart-badge');
         if (badge) {
             badge.classList.remove('pulse-animation');
-            void badge.offsetWidth; // Trigger reflow
+            void badge.offsetWidth;
             badge.classList.add('pulse-animation');
         }
     }
 };
 
-// Expose to window for compatibility with existing inline references
 window.CartManager = CartManager;

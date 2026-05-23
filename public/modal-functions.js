@@ -1,29 +1,26 @@
-// Product Modal Logic - REFACTORED
+// Product Modal Logic - NAVITO
 window.currentProductId = null;
 window.currentSelectedQty = 1;
 
-/**
- * Open the product modal with full details
- * @param {string} productId 
- */
-function openProductModal(productId) {
-    const isEnglish = Utils.isEnglish();
+async function openProductModal(productId) {
+    const isEnglish = typeof Utils !== 'undefined' && Utils.isEnglish();
 
-    // 1. Check if logged in (per user requirements in app.js)
-    if (!Utils.isLoggedIn()) {
-        alert(t('please_login'));
-        window.location.href = 'login.html';
-        return;
+    window.currentProductId = productId;
+
+    let products = window.allStoreProducts || [];
+    if (typeof window.getLocalStoreProducts === 'function') {
+        try {
+            products = await window.getLocalStoreProducts();
+        } catch (e) {
+            console.warn('[Modal] product load failed', e);
+        }
     }
 
-    // 2. Clear previous state and get data
-    window.currentProductId = productId;
-    const product = typeof window.getLocalStoreProducts === 'function' ?
-        window.getLocalStoreProducts().find(p => p._id == productId || p.id == productId) :
-        (window.allStoreProducts?.find(p => p._id == productId || p.id == productId));
+    const product = products.find(p => String(p._id) === String(productId) || String(p.id) === String(productId));
 
     if (!product) {
         console.error('Product not found:', productId);
+        if (typeof showToast === 'function') showToast('المنتج غير متوفر', 'error');
         return;
     }
 
@@ -33,161 +30,128 @@ function openProductModal(productId) {
         return;
     }
 
-    // 3. Populate Modal Content
+    const esc = typeof Utils !== 'undefined' && Utils.escapeHtml ? Utils.escapeHtml.bind(Utils) : (s) => String(s ?? '');
+    const name = isEnglish ? (product.nameEn || product.name_en || product.name) : (product.name_ar || product.name);
+    const price = Number(product.price) || 0;
+    const stock = parseInt(product.stock, 10);
+    const inStock = !Number.isFinite(stock) || stock > 0;
 
-    // Name
     const nameEl = document.getElementById('modal-product-name');
-    if (nameEl) nameEl.textContent = isEnglish ? (product.nameEn || product.name) : product.name;
+    if (nameEl) nameEl.textContent = name;
 
-    // Price
     const priceEl = document.getElementById('modal-price');
-    if (priceEl) {
-        priceEl.textContent = Utils.formatCurrency(product.price);
-    }
+    if (priceEl) priceEl.textContent = Utils.formatCurrency(price);
 
-    // Description
     const descEl = document.getElementById('modal-description');
     if (descEl) {
         descEl.textContent = isEnglish ?
-            (product.detailedDescriptionEn || product.descriptionEn || product.description) :
+            (product.detailedDescriptionEn || product.description_en || product.descriptionEn || product.description) :
             (product.detailedDescription || product.description);
     }
 
-    // Images
     const mainImg = document.getElementById('modal-main-image');
     const thumbContainer = document.getElementById('modal-thumbnails');
-    const images = product.images || [product.image];
+    const images = product.images?.length ? product.images : [product.image].filter(Boolean);
 
-    if (mainImg) mainImg.src = images[0];
+    if (mainImg && images[0]) mainImg.src = images[0];
 
     if (thumbContainer) {
         thumbContainer.innerHTML = images.map((img, idx) => `
-            <div class="thumbnail ${idx === 0 ? 'active' : ''}" onclick="changeMainImage('${img}', this)">
-                <img src="${img}" alt="Thumbnail ${idx}">
+            <div class="thumbnail ${idx === 0 ? 'active' : ''}" data-img="${esc(img)}" role="button" tabindex="0">
+                <img src="${esc(img)}" alt="Thumbnail ${idx + 1}">
             </div>
         `).join('');
+        thumbContainer.querySelectorAll('.thumbnail').forEach((el) => {
+            el.addEventListener('click', () => changeMainImage(el.getAttribute('data-img'), el));
+        });
     }
 
-    // Rating & Reviews
     const ratingContainer = document.getElementById('modal-rating');
-    if (ratingContainer) {
-        ratingContainer.innerHTML = renderStarRating(product.rating || 5);
-    }
+    if (ratingContainer) ratingContainer.innerHTML = renderStarRating(product.rating || 5);
 
     const reviewsEl = document.getElementById('modal-reviews');
-    if (reviewsEl) {
-        reviewsEl.textContent = `(${product.reviews || 0} ${t('reviews')})`;
-    }
+    if (reviewsEl) reviewsEl.textContent = `(${product.reviews || product.review_count || 0} ${typeof t === 'function' ? t('reviews') : 'تقييم'})`;
 
-    // Stock & Sold Count
     const stockEl = document.getElementById('modal-stock');
     if (stockEl) {
-        const soldCount = product.soldCount || (Math.floor(Math.random() * 800) + 200);
+        const soldCount = product.soldCount || 0;
+        const stockLabel = inStock
+            ? (typeof t === 'function' ? t('in_stock') : 'في المخزون')
+            : (isEnglish ? 'Out of stock' : 'نفد المخزون');
+        const stockClass = inStock ? 'stock-status-luxury' : 'stock-status-luxury out-of-stock';
         stockEl.innerHTML = `
             <div class="modal-badges-row">
-                <span class="stock-status-luxury"><i class="fas fa-check-circle"></i> ${t('in_stock')}</span>
-                <span class="free-shipping-badge-luxury"><i class="fas fa-truck"></i> ${isEnglish ? 'Free Shipping' : 'شحن مجاني'}</span>
-                <span class="sold-count-modal-luxury"><i class="fas fa-fire"></i> ${soldCount}+ ${isEnglish ? 'Sold' : 'تم البيع'}</span>
-            </div>
-        `;
+                <span class="${stockClass}"><i class="fas fa-${inStock ? 'check' : 'times'}-circle"></i> ${stockLabel}${Number.isFinite(stock) ? ` (${stock})` : ''}</span>
+                ${inStock ? `<span class="free-shipping-badge-luxury"><i class="fas fa-truck"></i> ${isEnglish ? 'Free Shipping' : 'شحن مجاني'}</span>` : ''}
+                ${soldCount > 0 ? `<span class="sold-count-modal-luxury"><i class="fas fa-fire"></i> ${soldCount}+ ${isEnglish ? 'Sold' : 'تم البيع'}</span>` : ''}
+            </div>`;
     }
 
-    // Features
     const branchContainer = document.getElementById('modal-features');
     if (branchContainer) {
-        const features = isEnglish ? (product.featuresEn || []) : (product.features || []);
-        branchContainer.innerHTML = features.length > 0 ?
-            features.map(f => `<li>${f}</li>`).join('') :
-            `<li>${isEnglish ? 'High Quality' : 'جودة عالية'}</li><li>${isEnglish ? 'Fast Shipping' : 'شحن سريع'}</li>`;
+        const features = isEnglish ? (product.featuresEn || product.features_en || []) : (product.features || []);
+        branchContainer.innerHTML = features.length > 0
+            ? features.map(f => `<li>${esc(f)}</li>`).join('')
+            : `<li>${isEnglish ? 'High Quality' : 'جودة عالية'}</li><li>${isEnglish ? 'Fast Shipping' : 'شحن سريع'}</li>`;
     }
 
-    // 4. Update Bundle Prices
-    const basePrice = Number(product.price);
     const b1 = document.getElementById('bundle-1-price');
     const b2 = document.getElementById('bundle-2-price');
     const b3 = document.getElementById('bundle-3-price');
-    const cur = typeof t === 'function' ? t('currency') : (isEnglish ? 'SAR' : 'ر.س');
 
-    if (b1) b1.textContent = Utils.formatCurrency(basePrice);
-    if (b2) b2.textContent = Utils.formatCurrency(basePrice * 2 * 0.9); // 10% off
-    if (b3) b3.textContent = Utils.formatCurrency(basePrice * 3 * 0.8); // 20% off
+    if (b1) b1.textContent = Utils.formatCurrency(price);
+    if (b2) b2.textContent = Utils.formatCurrency(price * 2 * 0.9);
+    if (b3) b3.textContent = Utils.formatCurrency(price * 3 * 0.8);
 
-    // Reset bundle selection to 1
     const bundleRadios = document.getElementsByName('bundle');
     bundleRadios.forEach(r => {
-        r.checked = r.value == "1";
-        r.parentElement.classList.toggle('active', r.value == "1");
+        r.checked = r.value == '1';
+        r.parentElement.classList.toggle('active', r.value == '1');
     });
     window.currentSelectedQty = 1;
 
-    // 5. Show Modal
     modalOverlay.classList.add('active');
-    document.body.style.overflow = 'hidden'; // Stop background scrolling
+    document.body.style.overflow = 'hidden';
 }
 
-/**
- * Handle bundle price selection
- */
 window.updateBundlePrice = function (qty) {
-    window.currentSelectedQty = parseInt(qty);
+    window.currentSelectedQty = parseInt(qty, 10) || 1;
     const bundleRadios = document.getElementsByName('bundle');
     bundleRadios.forEach(r => {
         r.parentElement.classList.toggle('active', r.value == qty);
     });
 };
 
-/**
- * Close the product modal
- */
 function closeProductModal() {
     const modalOverlay = document.getElementById('product-modal');
-    if (modalOverlay) {
-        modalOverlay.classList.remove('active');
-    }
-    document.body.style.overflow = ''; // Restore scrolling
+    if (modalOverlay) modalOverlay.classList.remove('active');
+    document.body.style.overflow = '';
     window.currentProductId = null;
 }
 
-/**
- * Change the main display image in the modal
- */
 function changeMainImage(imgSrc, thumbEl) {
     const mainImg = document.getElementById('modal-main-image');
     if (mainImg) mainImg.src = imgSrc;
-
-    // Update active thumb
     document.querySelectorAll('.thumbnail').forEach(t => t.classList.remove('active'));
     if (thumbEl) thumbEl.classList.add('active');
 }
 
-/**
- * Render star rating using FontAwesome consistent with product cards
- */
 function renderStarRating(rating) {
     let starsHtml = '';
     const floorRating = Math.floor(rating);
-
     for (let i = 0; i < 5; i++) {
-        if (i < floorRating) {
-            starsHtml += '<i class="fas fa-star"></i>';
-        } else if (i === floorRating && rating % 1 >= 0.5) {
-            starsHtml += '<i class="fas fa-star-half-alt"></i>';
-        } else {
-            starsHtml += '<i class="far fa-star"></i>';
-        }
+        if (i < floorRating) starsHtml += '<i class="fas fa-star"></i>';
+        else if (i === floorRating && rating % 1 >= 0.5) starsHtml += '<i class="fas fa-star-half-alt"></i>';
+        else starsHtml += '<i class="far fa-star"></i>';
     }
     return starsHtml;
 }
 
-// Global Event Listeners
 document.addEventListener('DOMContentLoaded', () => {
     const modalOverlay = document.getElementById('product-modal');
     if (modalOverlay) {
         modalOverlay.addEventListener('click', (e) => {
-            // Close if clicking the blurred area, not the white box
-            if (e.target === modalOverlay) {
-                closeProductModal();
-            }
+            if (e.target === modalOverlay) closeProductModal();
         });
     }
 });
@@ -196,8 +160,27 @@ document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') closeProductModal();
 });
 
-// Expose to window
+function addToCartFromModal() {
+    const id = window.currentProductId;
+    if (!id) return;
+
+    const products = window.allStoreProducts || (window.NAVITO && NAVITO.State.products) || [];
+    const product = products.find(p => String(p._id) === String(id) || String(p.id) === String(id));
+    if (!product || typeof CartManager === 'undefined') return;
+
+    const qty = window.currentSelectedQty || 1;
+    CartManager.addItem(product, document.getElementById('modal-add-cart'), qty);
+
+    const isEnglish = typeof Utils !== 'undefined' && Utils.isEnglish();
+    const name = isEnglish ? (product.nameEn || product.name) : (product.name_ar || product.name);
+    if (typeof showToast === 'function') {
+        showToast(isEnglish ? `${name} added to cart` : `تمت إضافة ${name} إلى السلة`, 'success');
+    }
+    closeProductModal();
+}
+
 window.openProductModal = openProductModal;
 window.closeProductModal = closeProductModal;
 window.changeMainImage = changeMainImage;
 window.renderStarRating = renderStarRating;
+window.addToCartFromModal = addToCartFromModal;

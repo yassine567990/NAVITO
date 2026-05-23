@@ -8,10 +8,10 @@
     { "source": "/login", "destination": "/login.html" },
     { "source": "/checkout", "destination": "/checkout.html" },
     { "source": "/admin", "destination": "/admin.html" },
-    { "source": "/admin-login", "destination": "/admin-login.html" },
     { "source": "/products", "destination": "/products.html" },
     { "source": "/sales", "destination": "/sales.html" },
-    { "source": "/track-order", "destination": "/track-order.html" }
+    { "source": "/track-order", "destination": "/track-order.html" },
+    { "source": "/offers", "destination": "/offers.html" }
   ],
   "headers": [
     {
@@ -22,5 +22,10 @@
         { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" }
       ]
     }
-  ]
+  ],
+  "functions": {
+    "api/**/*.js": {
+      "maxDuration": 15
+    }
+  }
 }

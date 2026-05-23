@@ -30,38 +30,26 @@
             <div style="font-size: 4rem; color: var(--luxury-gold); margin-bottom: 1rem;"><i
                     class="fas fa-box-open"></i></div>
             <h2 data-i18n="track_order_btn">تتبع حالة طلبك</h2>
-            <p data-i18n="enter_order_id">أدخل رقم الطلب المرسل إليك عبر البريد الإلكتروني أو الرسائل النصية</p>
+            <p data-i18n="enter_order_id">أدخل رقم الطلب ورقم الهاتف المستخدم عند الشراء</p>
         </div>
 
-        <div class="search-wrapper-premium" style="margin: 0 auto; max-width: 100%;">
-            <input type="text" id="order-id-input" class="search-input-premium" placeholder="رقم الطلب (مثال: #12345)">
-            <button class="search-btn-premium" onclick="trackOrder()">
+        <div class="search-wrapper-premium" style="margin: 0 auto; max-width: 100%; display:flex; flex-direction:column; gap:1rem;">
+            <input type="text" id="order-id-input" class="search-input-premium" placeholder="رقم الطلب (UUID)">
+            <input type="tel" id="order-phone-input" class="search-input-premium" placeholder="رقم الهاتف">
+            <button class="search-btn-premium" type="button" onclick="trackOrder()" style="width:100%;">
                 <span data-i18n="search">بحث</span>
             </button>
         </div>
 
+        <div id="tracking-error" style="display:none; margin-top:1.5rem; color:var(--danger-color); text-align:center;"></div>
+
         <div id="tracking-result" style="margin-top: 4rem; display: none;">
-            <!-- Tracking status will be shown here -->
-            <div class="tracking-steps">
-                <div class="track-step active">
-                    <div class="step-icon"><i class="fas fa-check"></i></div>
-                    <div class="step-label">تم استلام الطلب</div>
-                </div>
-                <div class="track-step active">
-                    <div class="step-icon"><i class="fas fa-cog fa-spin"></i></div>
-                    <div class="step-label">جاري المعالجة</div>
-                </div>
-                <div class="track-step">
-                    <div class="step-icon"><i class="fas fa-shipping-fast"></i></div>
-                    <div class="step-label">في الطريق إليك</div>
-                </div>
-                <div class="track-step">
-                    <div class="step-icon"><i class="fas fa-home"></i></div>
-                    <div class="step-label">تم التسليم</div>
-                </div>
-            </div>
+            <div id="order-summary" style="text-align:center; margin-bottom:2rem;"></div>
+            <div class="tracking-steps" id="tracking-steps"></div>
         </div>
     </main>
+
+    <div id="toast-container" class="toast-container"></div>
 
     <style>
         .tracking-steps {
@@ -101,21 +89,21 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            color: var(--text-secondary);
-            transition: all 0.3s ease;
+            font-size: 1.2rem;
+            transition: 0.3s;
         }
 
         .track-step.active .step-icon {
             background: var(--luxury-gold);
             border-color: var(--luxury-gold);
-            color: white;
-            box-shadow: 0 0 15px rgba(212, 175, 55, 0.4);
+            color: #fff;
         }
 
         .step-label {
             font-size: 0.9rem;
             font-weight: 700;
             color: var(--text-secondary);
+            text-align: center;
         }
 
         .track-step.active .step-label {
@@ -125,12 +113,63 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="supabase-client.js"></script>
+    <script src="utils.js"></script>
     <script src="i18n.js"></script>
     <script>
-        function trackOrder() {
-            const id = document.getElementById('order-id-input').value;
-            if (!id) return;
-            document.getElementById('tracking-result').style.display = 'block';
+        const STATUS_STEPS = [
+            { key: 'pending', ar: 'تم استلام الطلب', en: 'Order received' },
+            { key: 'processing', ar: 'جاري المعالجة', en: 'Processing' },
+            { key: 'shipped', ar: 'في الطريق إليك', en: 'On the way' },
+            { key: 'delivered', ar: 'تم التسليم', en: 'Delivered' }
+        ];
+
+        function statusIndex(status) {
+            const s = (status || 'pending').toLowerCase();
+            if (s.includes('deliver')) return 3;
+            if (s.includes('ship') || s.includes('way')) return 2;
+            if (s.includes('process')) return 1;
+            return 0;
+        }
+
+        async function trackOrder() {
+            const orderId = document.getElementById('order-id-input').value.trim();
+            const phone = document.getElementById('order-phone-input').value.trim();
+            const errEl = document.getElementById('tracking-error');
+            const resultEl = document.getElementById('tracking-result');
+
+            errEl.style.display = 'none';
+            resultEl.style.display = 'none';
+
+            if (!orderId || !phone) {
+                errEl.textContent = 'يرجى إدخال رقم الطلب والهاتف';
+                errEl.style.display = 'block';
+                return;
+            }
+
+            try {
+                const order = await Utils.trackOrder(orderId, phone);
+                const lang = localStorage.getItem('navito_language') || 'ar';
+                const isEn = lang === 'en';
+                const activeIdx = statusIndex(order.status);
+
+                document.getElementById('order-summary').innerHTML = `
+                    <p><strong>${isEn ? 'Order' : 'طلب'}:</strong> #${String(order.id).slice(0, 8).toUpperCase()}</p>
+                    <p><strong>${isEn ? 'Status' : 'الحالة'}:</strong> ${order.status}</p>
+                    <p><strong>${isEn ? 'Total' : 'المجموع'}:</strong> MAD ${Number(order.total_amount).toFixed(2)}</p>
+                `;
+
+                document.getElementById('tracking-steps').innerHTML = STATUS_STEPS.map((step, i) => `
+                    <div class="track-step ${i <= activeIdx ? 'active' : ''}">
+                        <div class="step-icon"><i class="fas fa-${i <= activeIdx ? 'check' : 'circle'}"></i></div>
+                        <div class="step-label">${isEn ? step.en : step.ar}</div>
+                    </div>
+                `).join('');
+
+                resultEl.style.display = 'block';
+            } catch (e) {
+                errEl.textContent = e.message || 'تعذر العثور على الطلب';
+                errEl.style.display = 'block';
+            }
         }
     </script>
 </body>

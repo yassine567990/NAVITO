@@ -12,10 +12,8 @@
     <!-- Theme & Language Persistence Script - Prevents Flash -->
     <script>
         (function () {
-            const currentUser = localStorage.getItem('navito_current_user');
             const session = localStorage.getItem('navito_session');
-            const adminToken = localStorage.getItem('admin_token');
-            if (!currentUser && !session && !adminToken) {
+            if (!session) {
                 window.location.href = 'login.html';
                 return;
             }

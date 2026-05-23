@@ -133,12 +133,12 @@
 
             <!-- تبويبات التصنيفات -->
             <div class="category-pills-wrapper">
-                <div class="category-pill active" onclick="filterByCategory('الكل')" data-i18n="category_all">الكل</div>
-                <div class="category-pill" onclick="filterByCategory('مكياج')" data-i18n="category_makeup">مكياج</div>
-                <div class="category-pill" onclick="filterByCategory('عناية بالبشرة')" data-i18n="category_skincare">عناية بالبشرة</div>
-                <div class="category-pill" onclick="filterByCategory('عطور')" data-i18n="category_perfumes">عطور</div>
-                <div class="category-pill" onclick="filterByCategory('العناية بالشعر')" data-i18n="category_haircare">عناية بالشعر</div>
-                <div class="category-pill" onclick="filterByCategory('أدوات المكياج')" data-i18n="category_makeup_tools">أدوات مكياج</div>
+                <div class="category-pill active" data-category="الكل" onclick="filterByCategory('الكل')" data-i18n="category_all">الكل</div>
+                <div class="category-pill" data-category="مكياج" onclick="filterByCategory('مكياج')" data-i18n="category_makeup">مكياج</div>
+                <div class="category-pill" data-category="عناية بالبشرة" onclick="filterByCategory('عناية بالبشرة')" data-i18n="category_skincare">عناية بالبشرة</div>
+                <div class="category-pill" data-category="عطور" onclick="filterByCategory('عطور')" data-i18n="category_perfumes">عطور</div>
+                <div class="category-pill" data-category="العناية بالشعر" onclick="filterByCategory('العناية بالشعر')" data-i18n="category_haircare">عناية بالشعر</div>
+                <div class="category-pill" data-category="أدوات المكياج" onclick="filterByCategory('أدوات المكياج')" data-i18n="category_makeup_tools">أدوات مكياج</div>
             </div>
 
             <!-- شبكة المنتجات -->
@@ -517,8 +517,6 @@
     <script src="modal-functions.js?v=1.1"></script>
     <script src="cart-manager.js?v=1.0"></script>
     <script src="app.js?v=2.1"></script>
-
-    <script src="add-sample-products.js?v=1.2"></script>
 
     <!-- سكريبتات متقدمة: الرسوم المتحركة، الإثبات الاجتماعي، التفاعلات الدقيقة -->
     <script>

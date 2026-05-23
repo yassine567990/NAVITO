@@ -11,14 +11,12 @@
     if (typeof Utils !== 'undefined' && Utils.init) {
         await Utils.init();
     }
-    const isAdmin = localStorage.getItem('admin_token') === 'demo_token_v1' || (typeof Utils !== 'undefined' && Utils.isAdmin());
-    if (!isAdmin) {
+    if (typeof Utils === 'undefined' || !Utils.isLoggedIn() || !Utils.isAdmin()) {
         window.location.href = 'login.html';
     }
 })();
 
 window.adminLogout = function () {
-    localStorage.removeItem('admin_token');
     Utils.logout('login.html');
 };
 

@@ -277,13 +277,10 @@
 
             // Load Remembered Credentials
             const rememberedEmail = localStorage.getItem('navito_rem_email');
-            const rememberedPass = localStorage.getItem('navito_rem_pass');
+            localStorage.removeItem('navito_rem_pass');
             if (rememberedEmail) {
                 document.getElementById('login-email').value = rememberedEmail;
                 document.getElementById('remember-me').checked = true;
-            }
-            if (rememberedPass) {
-                document.getElementById('login-password').value = rememberedPass;
             }
         });
 
@@ -304,41 +301,16 @@
                     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري التحقق...';
                 }
 
-                // Hardcoded Admin Login
-                if ((email.toLowerCase() === 'admin@gmail.com') && password === '0000') {
-                    // Handle Remember Me for Admin
-                    if (rememberMe) {
-                        localStorage.setItem('navito_rem_email', email);
-                        localStorage.setItem('navito_rem_pass', password);
-                    } else {
-                        localStorage.removeItem('navito_rem_email');
-                        localStorage.removeItem('navito_rem_pass');
-                    }
-
-                    localStorage.setItem('admin_token', 'demo_token_v1');
-                    localStorage.setItem('navito_current_user', JSON.stringify({
-                        fullname: 'Admin Panel',
-                        role: 'admin',
-                        email: 'admin@gmail.com'
-                    }));
-                    showToast('تم تسجيل دخول المشرف بنجاح', 'success');
-                    setTimeout(() => {
-                        window.location.href = 'admin.html';
-                    }, 1000);
-                    return;
-                }
-
                 if (typeof Utils !== 'undefined' && Utils.login) {
                     const user = await Utils.login(email, password);
 
                     // Handle Remember Me
                     if (rememberMe) {
                         localStorage.setItem('navito_rem_email', email);
-                        localStorage.setItem('navito_rem_pass', password);
                     } else {
                         localStorage.removeItem('navito_rem_email');
-                        localStorage.removeItem('navito_rem_pass');
                     }
+                    localStorage.removeItem('navito_rem_pass');
 
                     showToast('مرحباً ' + user.fullname, 'success');
                     setTimeout(() => {
