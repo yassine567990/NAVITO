@@ -45,9 +45,7 @@ window.NAVITO = {
                     const lang = localStorage.getItem('navito_language') || 'ar';
                     welcomeUser.textContent = (lang === 'en' ? 'Welcome, ' : 'مرحباً، ') + name;
                 }
-                NAVITO.UI.updateAdminLink(user);
             } else {
-                NAVITO.UI.updateAdminLink(null);
                 if (btn) {
                     btn.querySelector('span').textContent = typeof t === 'function' ? t('account') : 'حسابي';
                     btn.classList.remove('logged-in');
@@ -55,19 +53,7 @@ window.NAVITO = {
                 if (desktopBtnText) desktopBtnText.textContent = typeof t === 'function' ? t('account') : 'حسابي';
                 if (welcomeGuest) welcomeGuest.style.display = 'inline';
                 if (welcomeUser) welcomeUser.style.display = 'none';
-                NAVITO.UI.updateAdminLink(null);
             }
-        },
-
-        updateAdminLink: function (user) {
-            const u = user || (typeof Utils !== 'undefined' && Utils.isLoggedIn()
-                ? JSON.parse(localStorage.getItem('navito_current_user') || '{}')
-                : null);
-            const isAdmin = u && u.role === 'admin' && typeof Utils !== 'undefined' && Utils.isLoggedIn();
-            const adminBtn = document.getElementById('btn-admin-panel');
-            if (adminBtn) adminBtn.style.display = isAdmin ? 'block' : 'none';
-            const topAdmin = document.getElementById('top-admin-link');
-            if (topAdmin) topAdmin.style.display = isAdmin ? 'inline-flex' : 'none';
         },
 
         // تبديل حالة العربة (إغلاق / فتح)

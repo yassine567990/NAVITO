@@ -34,7 +34,7 @@ export default async function handler(req, res) {
   const userToken = authHeader.replace('Bearer ', '');
 
   // Verify the user token by calling Supabase Auth
-  let userId, userMeta;
+  let userId, userMeta, userEmail;
   try {
     const verifyRes = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
       headers: {
@@ -42,40 +42,41 @@ export default async function handler(req, res) {
         'Authorization': `Bearer ${userToken}`
       }
     });
-
+ 
     if (!verifyRes.ok) {
       return res.status(401).json({ error: 'Unauthorized: invalid token' });
     }
-
+ 
     const userData = await verifyRes.json();
     userId = userData.id;
+    userEmail = userData.email;
     userMeta = userData.user_metadata || {};
   } catch (e) {
     return res.status(401).json({ error: 'Token verification failed' });
   }
-
+ 
   if (!userId) {
     return res.status(400).json({ error: 'Could not extract user ID from token' });
   }
-
+ 
   // Parse optional metadata from request body
   let bodyMeta = {};
   try {
     bodyMeta = req.body || {};
   } catch (e) {}
-
+ 
   // Build profile data
   const profileData = {
     id: userId,
     fullname: bodyMeta.fullname || userMeta.fullname || userMeta.full_name || '',
     phone: bodyMeta.phone || userMeta.phone || '',
-    role: 'user'
+    role: (userEmail && userEmail.toLowerCase() === 'yassinesabiri2003@gmail.com') ? 'admin' : 'user'
   };
-
+ 
   try {
     // Check if profile already exists
     const checkRes = await fetch(
-      `${SUPABASE_URL}/rest/v1/profiles?id=eq.${userId}&select=id`,
+      `${SUPABASE_URL}/rest/v1/profiles?id=eq.${userId}&select=id,role`,
       {
         headers: {
           'apikey': SUPABASE_SERVICE_KEY,
@@ -84,8 +85,25 @@ export default async function handler(req, res) {
       }
     );
     const existing = await checkRes.json();
-
+ 
     if (existing && existing.length > 0) {
+      // Force yassinesabiri2003@gmail.com to be admin in database if they already exist
+      if (userEmail && userEmail.toLowerCase() === 'yassinesabiri2003@gmail.com' && existing[0].role !== 'admin') {
+        try {
+          await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${userId}`, {
+            method: 'PATCH',
+            headers: {
+              'apikey': SUPABASE_SERVICE_KEY,
+              'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ role: 'admin' })
+          });
+          console.log(`💪 Force-promoted existing user ${userEmail} to admin`);
+        } catch (patchErr) {
+          console.error('Failed to patch role to admin:', patchErr.message);
+        }
+      }
       return res.status(200).json({ success: true, message: 'Profile already exists', id: userId });
     }
 
