@@ -703,6 +703,12 @@ window.handleAccountClick = function () {
         if (streetEl) streetEl.value = user.street || '';
         if (zipEl) zipEl.value = user.zip || '';
         
+        // Show Admin Panel button if user is admin
+        const adminBtn = document.getElementById('btn-admin-panel');
+        if (adminBtn) {
+            adminBtn.style.display = user.role === 'admin' ? 'block' : 'none';
+        }
+        
         // إظهار النافذة
         const modal = document.getElementById('account-modal');
         if (modal) {
@@ -787,6 +793,11 @@ window.handleSaveAccountInfo = async function () {
     
     localStorage.setItem('navito_current_user', JSON.stringify(user));
     
+    // تحديث الواجهة مباشرة
+    if (window.NAVITO && window.NAVITO.UI && window.NAVITO.UI.updateAuth) {
+        window.NAVITO.UI.updateAuth();
+    }
+    
     if (typeof showToast === 'function') showToast("جاري الحفظ...", "success");
     
     // محاولة حفظ البيانات في Supabase إذا كان موجوداً
@@ -825,16 +836,13 @@ window.closeAccountModal = function () {
 };
 
 window.handleLogout = async function () {
-    const lang = localStorage.getItem('navito_language') || 'ar';
-    const msg = lang === 'en' ? 'Are you sure you want to logout?' : 'هل أنت متأكد من تسجيل الخروج؟';
-    if (confirm(msg)) {
-        if (typeof Utils !== 'undefined' && Utils.logout) {
-            await Utils.logout();
-        } else {
-            localStorage.removeItem('navito_current_user');
-            localStorage.removeItem('navito_session');
-            window.location.reload();
-        }
+    // إزالة رسالة التأكيد المزعجة التي تمنع الخروج السلس
+    if (typeof Utils !== 'undefined' && Utils.logout) {
+        await Utils.logout();
+    } else {
+        localStorage.removeItem('navito_current_user');
+        localStorage.removeItem('navito_session');
+        window.location.reload();
     }
 };
 
