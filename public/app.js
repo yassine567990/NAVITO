@@ -639,9 +639,19 @@ window.handleCheckout = async function (e) {
 // ─────────────────────────────────────────────
 window.handleAccountClick = function () {
     const isLoggedIn = typeof Utils !== 'undefined' ? Utils.isLoggedIn() : (!!localStorage.getItem('navito_current_user'));
-    if (isLoggedIn) {
-        const user = JSON.parse(localStorage.getItem('navito_current_user') || '{}');
-        
+    
+    let user = {};
+    let hasValidUser = false;
+    try {
+        const userStr = localStorage.getItem('navito_current_user');
+        if (userStr) {
+            user = JSON.parse(userStr);
+            // User must have real attributes to be considered valid
+            hasValidUser = !!(user && (user.id || user._id || user.email || user.fullname));
+        }
+    } catch (e) {}
+
+    if (isLoggedIn && hasValidUser) {
         // تعبئة البيانات في النافذة المنبثقة
         const nameEl = document.getElementById('account-name');
         const emailEl = document.getElementById('account-email');
@@ -667,6 +677,10 @@ window.handleAccountClick = function () {
             document.body.style.overflow = 'hidden';
         }
     } else {
+        // If not a valid logged-in user, clear everything and redirect to login
+        localStorage.removeItem('navito_session');
+        localStorage.removeItem('navito_current_user');
+        localStorage.removeItem('admin_token');
         window.location.href = 'login.html';
     }
 };

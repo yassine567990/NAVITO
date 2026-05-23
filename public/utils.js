@@ -9,10 +9,40 @@ const Utils = {
      * مساعدات المصادقة (Authentication Helpers) — Supabase Auth
      */
     isLoggedIn: function () {
-        // Check localStorage for Supabase session token or Admin token
-        const session = localStorage.getItem('navito_session');
+        // Robust check for Supabase session and user data
+        const sessionStr = localStorage.getItem('navito_session');
         const adminToken = localStorage.getItem('admin_token');
-        return !!session || !!adminToken;
+        const currentUserStr = localStorage.getItem('navito_current_user');
+
+        if (adminToken) return true;
+
+        if (sessionStr && currentUserStr) {
+            try {
+                const user = JSON.parse(currentUserStr);
+                const session = JSON.parse(sessionStr);
+                // User must have a valid ID and Email, and session must have a user object
+                const hasValidUser = !!(user && (user.id || user._id) && user.email);
+                const hasValidSession = !!(session && session.user);
+                
+                if (hasValidUser && hasValidSession) {
+                    return true;
+                } else {
+                    // Clean up stale or corrupted state
+                    localStorage.removeItem('navito_session');
+                    localStorage.removeItem('navito_current_user');
+                    return false;
+                }
+            } catch (e) {
+                return false;
+            }
+        }
+        
+        // If one is missing but the other exists, it's a stale state -> clean up
+        if (sessionStr || currentUserStr) {
+            localStorage.removeItem('navito_session');
+            localStorage.removeItem('navito_current_user');
+        }
+        return false;
     },
 
     isAdmin: function () {
