@@ -61,6 +61,7 @@ const translations = {
         'pending': 'قيد الانتظار',
         'awaiting_processing': 'بانتظار المعالجة',
         'processing': 'قيد المعالجة',
+        'shipped': 'تم الشحن',
         'in_progress': 'جاري التنفيذ',
         'completed': 'مكتملة',
         'delivered': 'تم التسليم',
@@ -227,6 +228,7 @@ const translations = {
         'total_orders': 'إجمالي الطلبات',
         'pending': 'قيد الانتظار',
         'processing': 'قيد المعالجة',
+        'shipped': 'تم الشحن',
         'completed': 'مكتملة',
         'mon': 'الإثنين', 'tue': 'الثلاثاء', 'wed': 'الأربعاء', 'thu': 'الخميس', 'fri': 'الجمعة', 'sat': 'السبت', 'sun': 'الأحد',
 
@@ -397,6 +399,7 @@ const translations = {
         'pending': 'Pending',
         'awaiting_processing': 'Awaiting Processing',
         'processing': 'Processing',
+        'shipped': 'Shipped',
         'in_progress': 'In Progress',
         'completed': 'Completed',
         'delivered': 'Delivered',
@@ -557,6 +560,7 @@ const translations = {
         'total_orders': 'Total Orders',
         'pending': 'Pending',
         'processing': 'Processing',
+        'shipped': 'Shipped',
         'completed': 'Completed',
         'mon': 'Mon', 'tue': 'Tue', 'wed': 'Wed', 'thu': 'Thu', 'fri': 'Fri', 'sat': 'Sat', 'sun': 'Sun',
 

@@ -73,8 +73,18 @@ const Utils = {
     },
 
     isAdmin: function () {
+        // يُشترط وجود جلسة Supabase حقيقية مع دور admin في الـ profile
+        // هذا يمنع أي شخص من رفع قيمة admin_token أو تعديل localStorage يدوياً
+        const sessionStr = localStorage.getItem('navito_session');
         const user = JSON.parse(localStorage.getItem('navito_current_user') || '{}');
-        return user.role === 'admin';
+        if (!sessionStr || user.role !== 'admin') return false;
+        try {
+            const session = JSON.parse(sessionStr);
+            // يجب أن يكون للجلسة user.id مطابق للمستخدم الحالي
+            return !!(session && session.user && session.user.id && session.user.id === user.id);
+        } catch (e) {
+            return false;
+        }
     },
 
     getSession: async function () {
@@ -95,8 +105,14 @@ const Utils = {
 
     // Initial Session Check
     async init() {
-        // Automatically clear admin session in regular storefront pages to allow guest shopping
-        const isStorefront = !window.location.pathname.includes('admin.html');
+        // تنظيف صارم لجميع المفاتيح القديمة والغير آمنة في كل تحميل
+        localStorage.removeItem('admin_token');
+        localStorage.removeItem('demo_token_v1');
+        localStorage.removeItem('navito_rem_pass');
+
+        // في صفحات المتجر: مسح جلسة Admin لمنع التعارض مع تجربة التسوق
+        const isAdminPage = ['admin.html', 'products.html', 'sales.html'].some(page => window.location.pathname.includes(page));
+        const isStorefront = !isAdminPage;
         if (isStorefront) {
             const currentUserStr = localStorage.getItem('navito_current_user');
             if (currentUserStr) {
@@ -108,19 +124,6 @@ const Utils = {
                         console.log('🧹 Storefront: admin session cleared for guest shopping.');
                     }
                 } catch (e) {}
-            }
-        }
-        localStorage.removeItem('admin_token');
-        localStorage.removeItem('navito_rem_pass');
-
-        const sessionStr = localStorage.getItem('navito_session');
-        if (sessionStr) {
-            try {
-                const session = JSON.parse(sessionStr);
-                // Optionally verify with Supabase if needed, but local storage is faster for UX
-                await window.supabase.auth.setSession(session);
-            } catch (e) {
-                localStorage.removeItem('navito_session');
             }
         }
     },
@@ -558,6 +561,17 @@ const Utils = {
             .order('created_at', { ascending: false });
         if (error) throw new Error(error.message);
         return data || [];
+    },
+
+    updateOrderStatus: async function (orderId, status) {
+        if (!this.isAdmin()) throw new Error('غير مصرح');
+        const { data, error } = await window.supabase
+            .from('orders')
+            .update({ status })
+            .eq('id', orderId)
+            .select();
+        if (error) throw new Error(error.message);
+        return data;
     },
 
     /**

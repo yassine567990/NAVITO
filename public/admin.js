@@ -3,18 +3,77 @@
  * Handles Product Management with Local Simulation
  */
 
-// Initialized
+// ─── Auth Guard ───────────────────────────────────────────────────────────────
+// نخفي body فوراً لمنع عرض المحتوى قبل اكتمال التحقق
+(function() { document.documentElement.style.visibility = 'hidden'; })();
 
-// Auth Guard and Logout are handled by Utils (linked in HTML)
-// Auth Guard - Redirect if not admin
-(async function() {
-    if (typeof Utils !== 'undefined' && Utils.init) {
-        await Utils.init();
+(async function () {
+    // انتظار تحميل Utils إذا لزم (race condition)
+    let waited = 0;
+    while (typeof Utils === 'undefined' && waited < 3000) {
+        await new Promise(r => setTimeout(r, 50));
+        waited += 50;
     }
-    if (typeof Utils === 'undefined' || !Utils.isLoggedIn() || !Utils.isAdmin()) {
+
+    if (typeof Utils === 'undefined') {
         window.location.href = 'login.html';
+        return;
     }
+
+    // تنظيف المفاتيح القديمة
+    await Utils.init();
+
+    // التحقق من جلسة Supabase الحية (source of truth)
+    let liveSession = null;
+    try {
+        const { data } = await window.supabase.auth.getSession();
+        liveSession = data?.session;
+    } catch (e) {
+        console.warn('[Admin] getSession failed:', e.message);
+    }
+
+    if (!liveSession || !liveSession.user) {
+        window.location.href = 'login.html';
+        return;
+    }
+
+    // التحقق من دور admin في قاعدة البيانات (source of truth)
+    let profile = null;
+    try {
+        const { data } = await window.supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', liveSession.user.id)
+            .maybeSingle();
+        profile = data;
+    } catch (e) {
+        console.warn('[Admin] profile fetch failed:', e.message);
+    }
+
+    if (!profile || profile.role !== 'admin') {
+        // ليس admin — امسح localStorage وأعد التوجيه
+        localStorage.removeItem('navito_current_user');
+        localStorage.removeItem('navito_session');
+        window.location.href = 'login.html';
+        return;
+    }
+
+    // تحديث navito_current_user بالبيانات الحية
+    const adminUser = JSON.parse(localStorage.getItem('navito_current_user') || '{}');
+    if (adminUser.role !== 'admin') {
+        localStorage.setItem('navito_current_user', JSON.stringify({
+            ...adminUser,
+            id: liveSession.user.id,
+            email: liveSession.user.email,
+            role: 'admin'
+        }));
+    }
+
+    // إظهار المحتوى بعد التحقق الناجح
+    document.documentElement.style.visibility = '';
+    console.log('✅ Admin access granted for:', liveSession.user.email);
 })();
+
 
 window.adminLogout = function () {
     Utils.logout('login.html');
@@ -1136,12 +1195,14 @@ function renderOrders(orders) {
             const statusLabels = {
                 pending: t('pending'),
                 processing: t('processing'),
+                shipped: typeof t === 'function' ? t('shipped') : 'Shipped',
                 completed: t('completed'),
                 cancelled: t('cancelled')
             };
             const statusClasses = {
                 pending: 'status-pending',
                 processing: 'status-processing',
+                shipped: 'status-shipped',
                 completed: 'status-completed',
                 cancelled: 'status-cancelled'
             };
@@ -1169,6 +1230,7 @@ function renderOrders(orders) {
         const statusColors = {
             pending: '#f59e0b',
             processing: '#3b82f6',
+            shipped: '#a855f7',
             completed: '#10b981',
             cancelled: '#ef4444'
         };
@@ -1176,6 +1238,7 @@ function renderOrders(orders) {
         const statusLabels = {
             pending: t('pending'),
             processing: t('processing'),
+            shipped: typeof t === 'function' ? t('shipped') : 'Shipped',
             completed: t('completed'),
             cancelled: t('cancelled')
         };
@@ -1257,13 +1320,14 @@ function viewOrderDetails(orderId) {
     const statusLabels = {
         pending: typeof t === 'function' ? t('pending') : 'Pending',
         processing: typeof t === 'function' ? t('processing') : 'Processing',
+        shipped: typeof t === 'function' ? t('shipped') : 'Shipped',
         completed: typeof t === 'function' ? t('completed') : 'Completed',
         cancelled: typeof t === 'function' ? t('cancelled') : 'Cancelled'
     };
 
     const content = document.getElementById('order-details-content');
     content.innerHTML = `
-    < div style = "padding: 1rem 0;" >
+    <div style="padding: 1rem 0;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border-color);">
                 <div>
                     <h2 style="font-size: 1.5rem; margin-bottom: 0.5rem;">${order.orderNumber}</h2>
@@ -1272,6 +1336,7 @@ function viewOrderDetails(orderId) {
                 <select onchange="updateOrderStatus('${order._id}', this.value)" style="padding: 0.5rem 1rem; border-radius: var(--radius-sm); border: 1px solid var(--border-color); background: var(--card-bg); color: var(--text-primary); font-weight: 600;">
                     <option value="pending" ${order.status === 'pending' ? 'selected' : ''}>${statusLabels.pending}</option>
                     <option value="processing" ${order.status === 'processing' ? 'selected' : ''}>${statusLabels.processing}</option>
+                    <option value="shipped" ${order.status === 'shipped' ? 'selected' : ''}>${statusLabels.shipped}</option>
                     <option value="completed" ${order.status === 'completed' ? 'selected' : ''}>${statusLabels.completed}</option>
                     <option value="cancelled" ${order.status === 'cancelled' ? 'selected' : ''}>${statusLabels.cancelled}</option>
                 </select>
@@ -1341,17 +1406,37 @@ function closeOrderModal() {
     if (modal) modal.classList.remove('active');
 }
 
-function updateOrderStatus(orderId, newStatus) {
-    const orders = getLocalOrders();
-    const orderIndex = orders.findIndex(o => o._id === orderId);
+async function updateOrderStatus(orderId, newStatus) {
+    let success = false;
+    
+    // First, try updating Supabase
+    try {
+        if (typeof Utils !== 'undefined' && Utils.updateOrderStatus) {
+            await Utils.updateOrderStatus(orderId, newStatus);
+            success = true;
+            console.log('☁️ Order status updated in Supabase');
+        }
+    } catch (supabaseErr) {
+        console.warn('Supabase order status update failed, checking local:', supabaseErr);
+    }
+
+    // Update in LocalStorage as well (or as fallback)
+    const localOrders = getLocalOrders();
+    const orderIndex = localOrders.findIndex(o => o._id === orderId || o.id === orderId);
     if (orderIndex !== -1) {
-        orders[orderIndex].status = newStatus;
-        saveLocalOrders(orders);
-        currentOrders = orders;
-        renderOrders(orders);
-        updateOrderStats(orders);
+        localOrders[orderIndex].status = newStatus;
+        saveLocalOrders(localOrders);
+        success = true;
+    }
+
+    if (success) {
         showToast(typeof t === 'function' ? t('order_status_updated') : 'Order status updated', 'success');
         closeOrderModal();
+        if (typeof fetchOrders === 'function') {
+            await fetchOrders(); // Reload and re-render
+        }
+    } else {
+        showToast(typeof t === 'function' ? t('update_failed') : 'Failed to update order status', 'error');
     }
 }
 

@@ -249,8 +249,8 @@ window.NAVITO = {
                         <h3 class="title-luxury">${name}</h3>
                         <div class="price-row-luxury">
                             <div class="price-stack">
-                                <div class="price-luxury">${currency} ${product.price.toFixed(2)}</div>
-                                ${product.oldPrice ? `<div class="old-price-luxury">${currency} ${product.oldPrice.toFixed(2)}</div>` : ''}
+                                <div class="price-luxury">${currency} ${price.toFixed(2)}</div>
+                                ${oldPrice > 0 ? `<div class="old-price-luxury">${currency} ${oldPrice.toFixed(2)}</div>` : ''}
                             </div>
                             ${product.category === 'العروض' ? `<span class="bundle-badge-luxury"><i class="fas fa-gift"></i> باقة</span>` : ''}
                         </div>
@@ -429,12 +429,13 @@ window.NAVITO = {
                 }
             }
             
-            // تبويبات التصنيفات
+            // تبويبات التصنيفات - نستخدم data-category دائماً لتجنب تعطل الفلتر عند التبديل للإنجليزية
             document.addEventListener('click', (e) => {
                 const pill = e.target.closest('.category-pill');
                 if (pill) {
-                    const cat = pill.getAttribute('data-category') || pill.textContent;
-                    NAVITO.Logic.filterByCategory(cat);
+                    // data-category يحتوي دائماً على القيمة العربية المطابقة لـ product.category
+                    const cat = pill.getAttribute('data-category');
+                    if (cat) NAVITO.Logic.filterByCategory(cat);
                 }
             });
         },
@@ -712,7 +713,6 @@ window.handleAccountClick = function () {
         // If not a valid logged-in user, clear everything and redirect to login
         localStorage.removeItem('navito_session');
         localStorage.removeItem('navito_current_user');
-        localStorage.removeItem('admin_token');
         window.location.href = 'login.html';
     }
 };
