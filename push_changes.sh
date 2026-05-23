@@ -1,19 +1,9 @@
 #!/bin/bash
 git add -A
-git commit -m "fix: serverless API for profile creation + robust ensureProfile with API fallback
+git commit -m "fix: prevent admin checkout with custom error + robust createOrder session fallback
 
-- Added /api/ensure-profile.js Vercel serverless function
-  * Uses SUPABASE_SERVICE_ROLE_KEY (env var) to bypass RLS safely
-  * Verifies user JWT before creating profile
-  * Returns 200 if profile already exists
-
-- Updated public/utils.js ensureProfile():
-  * Step 1: Check if profile exists (SELECT)
-  * Step 2: Try direct upsert (works if RLS configured)
-  * Step 3: Fallback to /api/ensure-profile serverless API
-  * Step 4: Verify creation with graceful RLS-aware logic
-
-This fixes the foreign key constraint error for Google OAuth users
-during checkout by ensuring profile always exists before order insert."
+- Updated createOrder in public/utils.js:
+  * Prevents Admin user accounts (such as admin@gmail.com) from checking out and displays a clear message asking them to log in with a customer account to test checkout.
+  * Robustly falls back to localStorage current_user and session IDs if Supabase session fails to sync or fetch, preventing unexpected 'login first' errors for Google OAuth users."
 git push origin main
 echo "✅ Done! Pushed to GitHub."

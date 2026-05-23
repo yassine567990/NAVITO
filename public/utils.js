@@ -319,10 +319,14 @@ const Utils = {
     },
 
     createOrder: async function (orderData) {
+        // Step 0: Clear block for Admin accounts
+        if (this.isAdmin()) {
+            throw new Error('حساب المشرف مخصص للإدارة فقط لوحة التحكم. يرجى تسجيل الدخول بحساب زبون عادي لتجربة الشراء.');
+        }
+
         let userId = null;
         let userMeta = {};
 
-        // Step 1: Try to get/refresh the active Supabase session
         // Step 1: Try to get/refresh the active Supabase session
         try {
             // First try to refresh the session to make sure it's valid
@@ -346,28 +350,28 @@ const Utils = {
             console.warn('⚠️ createOrder: session retrieval failed:', e.message);
         }
 
-        // Step 2: Fallback to localStorage if no active Supabase session
+        // Step 2: Fallback to localStorage session if no active Supabase session
         if (!userId) {
             const sessionStr = localStorage.getItem('navito_session');
             if (sessionStr) {
                 try {
                     const parsedSession = JSON.parse(sessionStr);
-                    userId = parsedSession.user?.id;
+                    userId = parsedSession.user?.id || parsedSession.user_id;
                     userMeta = parsedSession.user?.user_metadata || {};
                     if (userId) console.log('✅ createOrder: using localStorage session user_id:', userId);
                 } catch (e) {}
             }
         }
 
-        // Step 3: Fallback to navito_current_user (but ONLY if it has a valid UUID)
+        // Step 3: Fallback to navito_current_user (robust parsing)
         if (!userId) {
             const currentUserStr = localStorage.getItem('navito_current_user');
             if (currentUserStr) {
                 try {
                     const parsedUser = JSON.parse(currentUserStr);
-                    // Only use if it looks like a valid UUID (36 chars with dashes)
-                    if (parsedUser.id && parsedUser.id.length === 36 && parsedUser.id.includes('-')) {
-                        userId = parsedUser.id;
+                    // Only use if it has a valid ID
+                    if (parsedUser.id || parsedUser._id) {
+                        userId = parsedUser.id || parsedUser._id;
                         userMeta = { fullname: parsedUser.fullname, phone: parsedUser.phone };
                         console.log('✅ createOrder: using current_user id:', userId);
                     }
@@ -375,9 +379,10 @@ const Utils = {
             }
         }
 
+        // If still no valid user_id found, throw a clear login message
         if (!userId) {
             console.error('❌ createOrder: No valid user_id found!');
-            throw new Error('يجب تسجيل الدخول أولاً');
+            throw new Error('يجب تسجيل الدخول أولاً لإتمام عملية الشراء.');
         }
 
         // Ensure profile exists before inserting order
