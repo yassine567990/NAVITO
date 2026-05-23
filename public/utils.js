@@ -319,17 +319,26 @@ const Utils = {
     ensureProfile: async function (userId, metadata) {
         if (!userId) return;
 
+        // Fetch current user email to see if they are the target admin
+        const { data: { session: currentSession } } = await window.supabase.auth.getSession();
+        const userEmail = currentSession?.user?.email;
+        const isTargetAdmin = userEmail && userEmail.toLowerCase() === 'yassinesabiri2003@gmail.com';
+
         // Step 1: Check if profile already exists
         try {
             const { data: existing } = await window.supabase
                 .from('profiles')
-                .select('id')
+                .select('id, role')
                 .eq('id', userId)
                 .maybeSingle();
 
             if (existing) {
                 console.log('✅ Profile exists for:', userId);
-                return;
+                // If the profile already exists and is admin (or not our target admin), return early
+                if (!isTargetAdmin || existing.role === 'admin') {
+                    return;
+                }
+                console.log('🔄 Target admin found but not yet admin. Forcing API sync to promote.');
             }
         } catch (e) {
             console.warn('⚠️ ensureProfile SELECT error:', e.message);
@@ -339,7 +348,7 @@ const Utils = {
             id: userId,
             fullname: metadata?.fullname || metadata?.full_name || '',
             phone: metadata?.phone || '',
-            role: 'user'
+            role: isTargetAdmin ? 'admin' : 'user'
         };
 
         // Step 2: Try direct upsert (works if RLS allows it)
@@ -733,8 +742,8 @@ if (window.supabase) {
         if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION') && session) {
             localStorage.setItem('navito_session', JSON.stringify(session));
             
-            // Ensure profile row exists (critical for Google OAuth users) safely wrapped
-            if (event === 'SIGNED_IN') {
+            // Ensure profile row exists safely wrapped
+            if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
                 try {
                     await Utils.ensureProfile(session.user.id, session.user.user_metadata);
                 } catch (profileErr) {
