@@ -103,29 +103,62 @@ const Utils = {
         window.location.href = redirectUrl;
     },
 
+    /** تنظيف أخطاء OAuth في الرابط (مثل otp_expired) */
+    handleAuthHashErrors: function () {
+        const hash = window.location.hash || '';
+        if (!hash.includes('error=')) return;
+        if (hash.includes('otp_expired') || hash.includes('access_denied')) {
+            const msg = 'انتهت صلاحية رابط البريد. سجّل الدخول بالبريد وكلمة المرور من صفحة login.';
+            if (typeof window.showToast === 'function') window.showToast(msg, 'error');
+            else alert(msg);
+        }
+        history.replaceState(null, '', window.location.pathname + window.location.search);
+    },
+
     // Initial Session Check
     async init() {
-        // تنظيف صارم لجميع المفاتيح القديمة والغير آمنة في كل تحميل
+        this.handleAuthHashErrors();
         localStorage.removeItem('admin_token');
         localStorage.removeItem('demo_token_v1');
         localStorage.removeItem('navito_rem_pass');
 
-        // في صفحات المتجر: مسح جلسة Admin لمنع التعارض مع تجربة التسوق
-        const isAdminPage = ['admin.html', 'products.html', 'sales.html'].some(page => window.location.pathname.includes(page));
-        const isStorefront = !isAdminPage;
-        if (isStorefront) {
-            const currentUserStr = localStorage.getItem('navito_current_user');
-            if (currentUserStr) {
-                try {
-                    const parsed = JSON.parse(currentUserStr);
-                    if (parsed.role === 'admin') {
-                        localStorage.removeItem('navito_current_user');
-                        localStorage.removeItem('navito_session');
-                        console.log('🧹 Storefront: admin session cleared for guest shopping.');
-                    }
-                } catch (e) {}
+        const sessionStr = localStorage.getItem('navito_session');
+        if (sessionStr) {
+            try {
+                const session = JSON.parse(sessionStr);
+                await window.supabase.auth.setSession(session);
+            } catch (e) {
+                localStorage.removeItem('navito_session');
             }
         }
+    },
+
+    /** جلب الدور الحالي من Supabase (مصدر الحقيقة) */
+    syncProfileFromDb: async function () {
+        const { data: { session } } = await window.supabase.auth.getSession();
+        if (!session?.user) return null;
+
+        const { data: profile, error } = await window.supabase
+            .from('profiles')
+            .select('id, fullname, phone, role')
+            .eq('id', session.user.id)
+            .maybeSingle();
+
+        if (error) {
+            console.warn('[Utils] syncProfileFromDb:', error.message);
+        }
+
+        const userData = {
+            id: session.user.id,
+            email: session.user.email,
+            fullname: profile?.fullname || session.user.user_metadata?.fullname || session.user.user_metadata?.full_name || '',
+            phone: profile?.phone || '',
+            role: profile?.role || 'user',
+        };
+
+        localStorage.setItem('navito_session', JSON.stringify(session));
+        localStorage.setItem('navito_current_user', JSON.stringify(userData));
+        return userData;
     },
 
     login: async function (email, password) {
@@ -141,24 +174,9 @@ const Utils = {
             throw new Error(error.message);
         }
 
-        // Fetch profile from DB (handle missing profile gracefully)
-        const { data: profile } = await window.supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', data.user.id)
-            .maybeSingle();
-
-        const userData = {
-            id: data.user.id,
-            email: data.user.email,
-            fullname: profile?.fullname || data.user.user_metadata?.fullname || '',
-            phone: profile?.phone || '',
-            role: profile?.role || 'user'
-        };
-
         localStorage.setItem('navito_session', JSON.stringify(data.session));
-        localStorage.setItem('navito_current_user', JSON.stringify(userData));
-        return userData;
+        await window.supabase.auth.setSession(data.session);
+        return await this.syncProfileFromDb();
     },
 
     resendConfirmationEmail: async function (email) {
@@ -712,7 +730,7 @@ const Utils = {
 // Keep localStorage in sync with Supabase session
 if (window.supabase) {
     window.supabase.auth.onAuthStateChange(async (event, session) => {
-        if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session) {
+        if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION') && session) {
             localStorage.setItem('navito_session', JSON.stringify(session));
             
             // Ensure profile row exists (critical for Google OAuth users) safely wrapped
@@ -724,9 +742,9 @@ if (window.supabase) {
                 }
             }
 
-            // Sync user data if missing or changed
+            // Sync user data if missing, or on explicit sign-in/initial load
             const currentUser = localStorage.getItem('navito_current_user');
-            if (!currentUser || event === 'SIGNED_IN') {
+            if (!currentUser || event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
                 try {
                     const { data: profile } = await window.supabase
                          .from('profiles')

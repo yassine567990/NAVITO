@@ -312,14 +312,16 @@
                     }
                     localStorage.removeItem('navito_rem_pass');
 
-                    showToast('مرحباً ' + user.fullname, 'success');
+                    const fresh = await Utils.syncProfileFromDb();
+                    const role = fresh?.role || user?.role || 'user';
+                    showToast('مرحباً ' + (fresh?.fullname || user.fullname), 'success');
                     setTimeout(() => {
-                        if (user.role === 'admin') {
+                        if (role === 'admin') {
                             window.location.href = 'admin.html';
                         } else {
                             window.location.href = 'index.html';
                         }
-                    }, 1000);
+                    }, 800);
                 }
             } catch (error) {
                 if (error.code === 'email_not_confirmed') {
