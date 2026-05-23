@@ -1,10 +1,9 @@
 #!/bin/bash
 git add -A
-git commit -m "fix: robust handleAccountClick logic to force login page redirect when user is a guest
+git commit -m "fix: self-healing session and robust auth state listener logic for Google OAuth
 
-- Updated handleAccountClick in public/app.js:
-  * Strictly checks if there is a valid user with non-empty attributes (id, email, or fullname) in localStorage.
-  * If the user is a guest/empty account, clicking the 'My Account' (حسابي) button will ALWAYS automatically clear any partial/corrupted localStorage keys and redirect the user instantly to login.html to create an account or sign in.
-  * This prevents showing empty account details modals for logged out guests."
+- Updated public/utils.js:
+  * Enhanced isLoggedIn(): if navito_session exists but navito_current_user is missing (e.g. during OAuth return), it immediately self-heals by parsing the active session and reconstructing the user object on-the-fly, returning true. This prevents session loss.
+  * Wrapped ensureProfile() in a try-catch within onAuthStateChange: any backend database delay/error during background profile checks will never block session activation or UI rendering."
 git push origin main
 echo "✅ Done! Pushed to GitHub."

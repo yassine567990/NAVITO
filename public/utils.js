@@ -12,34 +12,41 @@ const Utils = {
         // Robust check for Supabase session and user data
         const sessionStr = localStorage.getItem('navito_session');
         const adminToken = localStorage.getItem('admin_token');
-        const currentUserStr = localStorage.getItem('navito_current_user');
+        let currentUserStr = localStorage.getItem('navito_current_user');
 
         if (adminToken) return true;
 
-        if (sessionStr && currentUserStr) {
+        if (sessionStr) {
             try {
-                const user = JSON.parse(currentUserStr);
                 const session = JSON.parse(sessionStr);
-                // User must have a valid ID and Email, and session must have a user object
-                const hasValidUser = !!(user && (user.id || user._id) && user.email);
-                const hasValidSession = !!(session && session.user);
-                
-                if (hasValidUser && hasValidSession) {
-                    return true;
-                } else {
-                    // Clean up stale or corrupted state
-                    localStorage.removeItem('navito_session');
-                    localStorage.removeItem('navito_current_user');
-                    return false;
+                if (session && session.user) {
+                    // Self-healing: if currentUser is missing or invalid, reconstruct it from the session
+                    if (!currentUserStr) {
+                        const userData = {
+                            id: session.user.id,
+                            email: session.user.email,
+                            fullname: session.user.user_metadata?.fullname || session.user.user_metadata?.full_name || 'Google User',
+                            phone: session.user.user_metadata?.phone || '',
+                            role: 'user'
+                        };
+                        localStorage.setItem('navito_current_user', JSON.stringify(userData));
+                        currentUserStr = JSON.stringify(userData);
+                        console.log('🔄 Self-healed missing currentUser from active session.');
+                    }
+                    
+                    const user = JSON.parse(currentUserStr);
+                    const hasValidUser = !!(user && (user.id || user._id) && user.email);
+                    if (hasValidUser) {
+                        return true;
+                    }
                 }
             } catch (e) {
                 return false;
             }
         }
         
-        // If one is missing but the other exists, it's a stale state -> clean up
-        if (sessionStr || currentUserStr) {
-            localStorage.removeItem('navito_session');
+        // If no session but currentUser exists, clear it to avoid stale state
+        if (currentUserStr) {
             localStorage.removeItem('navito_current_user');
         }
         return false;
@@ -643,9 +650,13 @@ if (window.supabase) {
         if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session) {
             localStorage.setItem('navito_session', JSON.stringify(session));
             
-            // Ensure profile row exists (critical for Google OAuth users)
+            // Ensure profile row exists (critical for Google OAuth users) safely wrapped
             if (event === 'SIGNED_IN') {
-                await Utils.ensureProfile(session.user.id, session.user.user_metadata);
+                try {
+                    await Utils.ensureProfile(session.user.id, session.user.user_metadata);
+                } catch (profileErr) {
+                    console.error('⚠️ ensureProfile background error:', profileErr.message);
+                }
             }
 
             // Sync user data if missing or changed
@@ -653,15 +664,15 @@ if (window.supabase) {
             if (!currentUser || event === 'SIGNED_IN') {
                 try {
                     const { data: profile } = await window.supabase
-                        .from('profiles')
-                        .select('*')
-                        .eq('id', session.user.id)
-                        .maybeSingle();
+                         .from('profiles')
+                         .select('*')
+                         .eq('id', session.user.id)
+                         .maybeSingle();
 
                     const userData = {
                         id: session.user.id,
                         email: session.user.email,
-                        fullname: profile?.fullname || session.user.user_metadata?.fullname || '',
+                        fullname: profile?.fullname || session.user.user_metadata?.fullname || session.user.user_metadata?.full_name || '',
                         phone: profile?.phone || '',
                         role: profile?.role || 'user'
                     };
