@@ -50,8 +50,24 @@
         console.warn('[Admin] profile fetch failed:', e.message);
     }
 
+    // إذا كان المستخدم غير admin لكن هو حسابنا المستهدف، نحاول ترقية الدور عبر API
+    const isTargetAdmin = liveSession.user.email?.toLowerCase() === 'yassinesabiri2003@gmail.com';
     if (!profile || profile.role !== 'admin') {
-        // ليس admin — امسح localStorage وأعد التوجيه
+        if (isTargetAdmin) {
+            try {
+                await fetch('/api/ensure-profile', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Authorization: `Bearer ${liveSession.access_token}`
+                    }
+                });
+                console.log('✅ تم ترقية الحساب إلى admin عبر ensure-profile');
+            } catch (e) {
+                console.error('⚠️ فشل ترقية admin:', e);
+            }
+        }
+        // غير admin — مسح الجلسة وإعادة التوجيه
         localStorage.removeItem('navito_current_user');
         localStorage.removeItem('navito_session');
         window.location.href = 'login.html';
