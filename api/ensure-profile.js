@@ -1,11 +1,13 @@
 /**
  * NAVITO — Vercel Serverless API: /api/ensure-profile
  * 
- * Creates a user profile in Supabase using the service_role key.
+ * Creates/updates a user profile in Supabase using the service_role key.
  * This bypasses RLS safely since it runs server-side.
  * 
  * Called by the frontend after Google OAuth or any auth flow
  * where the user might not have a profile row yet.
+ * 
+ * Special behavior: yassinesabiri2003@gmail.com is ALWAYS promoted to admin.
  */
 
 const SUPABASE_URL = 'https://yfjmzjsibbogfilbpfir.supabase.co';
@@ -52,12 +54,15 @@ export default async function handler(req, res) {
     userEmail = userData.email;
     userMeta = userData.user_metadata || {};
   } catch (e) {
-    return res.status(401).json({ error: 'Token verification failed' });
+    return res.status(401).json({ error: 'Token verification failed', detail: e.message });
   }
  
   if (!userId) {
     return res.status(400).json({ error: 'Could not extract user ID from token' });
   }
+
+  // Determine if this is the target admin email
+  const isTargetAdmin = userEmail && userEmail.toLowerCase() === 'yassinesabiri2003@gmail.com';
  
   // Parse optional metadata from request body
   let bodyMeta = {};
@@ -70,67 +75,86 @@ export default async function handler(req, res) {
     id: userId,
     fullname: bodyMeta.fullname || userMeta.fullname || userMeta.full_name || '',
     phone: bodyMeta.phone || userMeta.phone || '',
-    role: (userEmail && userEmail.toLowerCase() === 'yassinesabiri2003@gmail.com') ? 'admin' : 'user'
+    role: isTargetAdmin ? 'admin' : 'user'
   };
  
+  const serviceHeaders = {
+    'apikey': SUPABASE_SERVICE_KEY,
+    'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+    'Content-Type': 'application/json'
+  };
+
   try {
     // Check if profile already exists
     const checkRes = await fetch(
       `${SUPABASE_URL}/rest/v1/profiles?id=eq.${userId}&select=id,role`,
-      {
-        headers: {
-          'apikey': SUPABASE_SERVICE_KEY,
-          'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`
-        }
-      }
+      { headers: serviceHeaders }
     );
     const existing = await checkRes.json();
  
     if (existing && existing.length > 0) {
-      // Force yassinesabiri2003@gmail.com to be admin in database if they already exist
-      if (userEmail && userEmail.toLowerCase() === 'yassinesabiri2003@gmail.com' && existing[0].role !== 'admin') {
-        try {
-          await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${userId}`, {
-            method: 'PATCH',
-            headers: {
-              'apikey': SUPABASE_SERVICE_KEY,
-              'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ role: 'admin' })
-          });
-          console.log(`💪 Force-promoted existing user ${userEmail} to admin`);
-        } catch (patchErr) {
-          console.error('Failed to patch role to admin:', patchErr.message);
-        }
+      const currentRole = existing[0].role;
+
+      // Always ensure the target admin has admin role
+      if (isTargetAdmin && currentRole !== 'admin') {
+        await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${userId}`, {
+          method: 'PATCH',
+          headers: serviceHeaders,
+          body: JSON.stringify({ role: 'admin' })
+        });
+        console.log(`💪 Force-promoted existing user ${userEmail} to admin`);
+        return res.status(200).json({
+          success: true,
+          message: 'Profile updated: role promoted to admin',
+          id: userId,
+          role: 'admin'
+        });
       }
-      return res.status(200).json({ success: true, message: 'Profile already exists', id: userId });
+
+      return res.status(200).json({
+        success: true,
+        message: 'Profile already exists',
+        id: userId,
+        role: currentRole
+      });
     }
 
-    // Insert profile using service_role (bypasses RLS safely)
+    // Insert new profile using service_role (bypasses RLS safely)
     const insertRes = await fetch(`${SUPABASE_URL}/rest/v1/profiles`, {
       method: 'POST',
-      headers: {
-        'apikey': SUPABASE_SERVICE_KEY,
-        'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
-        'Content-Type': 'application/json',
-        'Prefer': 'return=minimal'
-      },
+      headers: { ...serviceHeaders, 'Prefer': 'return=minimal' },
       body: JSON.stringify(profileData)
     });
 
     if (!insertRes.ok) {
       const errText = await insertRes.text();
-      // If duplicate (race condition), that's fine
+      // If duplicate (race condition), that's fine — try to read role
       if (errText.includes('duplicate') || errText.includes('23505')) {
-        return res.status(200).json({ success: true, message: 'Profile already exists (race)', id: userId });
+        // Try to get the existing role
+        const recheckRes = await fetch(
+          `${SUPABASE_URL}/rest/v1/profiles?id=eq.${userId}&select=role`,
+          { headers: serviceHeaders }
+        );
+        const recheckData = await recheckRes.json();
+        const existingRole = recheckData?.[0]?.role || (isTargetAdmin ? 'admin' : 'user');
+        return res.status(200).json({
+          success: true,
+          message: 'Profile already exists (race)',
+          id: userId,
+          role: existingRole
+        });
       }
       console.error('Profile insert error:', errText);
       return res.status(500).json({ error: 'Failed to create profile', detail: errText });
     }
 
-    console.log(`✅ Profile created for user: ${userId}`);
-    return res.status(200).json({ success: true, message: 'Profile created', id: userId });
+    console.log(`✅ Profile created for user: ${userId} (${userEmail}) with role: ${profileData.role}`);
+    return res.status(200).json({
+      success: true,
+      message: 'Profile created',
+      id: userId,
+      role: profileData.role
+    });
 
   } catch (e) {
     console.error('ensure-profile error:', e);

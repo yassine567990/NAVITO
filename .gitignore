@@ -7,3 +7,4 @@ db-backup/
 .env*.local
 scratch/
 data/
+.env*
