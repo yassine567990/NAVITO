@@ -862,14 +862,14 @@
                         <h3 style="margin-bottom: 1rem;">${t('cart_items')}</h3>
                         ${order.items.map(item => `
                             <div style="display: flex; gap: 1rem; padding: 1rem; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: var(--radius-sm); margin-bottom: 0.75rem;">
-                                <img src="${item.image}" alt="${item.productName}" style="width: 80px; height: 80px; object-fit: cover; border-radius: var(--radius-sm);">
+                                <img src="${item.image || ''}" alt="${item.productName || item.name || 'Product'}" style="width: 80px; height: 80px; object-fit: cover; border-radius: var(--radius-sm);">
                                 <div style="flex: 1;">
-                                    <h4 style="margin-bottom: 0.5rem;">${item.productName}</h4>
+                                    <h4 style="margin-bottom: 0.5rem;">${item.productName || item.name || 'Unknown Product'}</h4>
                                     <p style="color: var(--text-secondary); font-size: 0.9rem;">${t('quantity')}: ${item.quantity}</p>
                                 </div>
                                 <div style="text-align: left;">
-                                    <p style="font-weight: 700; color: var(--accent-color);">$${(item.price * item.quantity).toFixed(2)}</p>
-                                    <p style="color: var(--text-secondary); font-size: 0.85rem;">$${item.price.toFixed(2)} × ${item.quantity}</p>
+                                    <p style="font-weight: 700; color: var(--accent-color);">$${((item.price || 0) * (item.quantity || 1)).toFixed(2)}</p>
+                                    <p style="color: var(--text-secondary); font-size: 0.85rem;">$${(item.price || 0).toFixed(2)} × ${item.quantity}</p>
                                 </div>
                             </div>
                         `).join('')}
