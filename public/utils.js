@@ -100,6 +100,12 @@ const Utils = {
         }
         localStorage.removeItem('navito_current_user');
         localStorage.removeItem('navito_session');
+        // Force clear Supabase tokens to prevent auto-login loop
+        Object.keys(localStorage).forEach(key => {
+            if (key.startsWith('sb-')) {
+                localStorage.removeItem(key);
+            }
+        });
         window.location.href = redirectUrl;
     },
 
