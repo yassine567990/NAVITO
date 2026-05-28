@@ -227,13 +227,7 @@
                     تسجيل الدخول عبر جوجل
                 </button>
 
-                <!-- زر دخول الأدمن المباشر -->
-                <div style="margin-top: 1.5rem; border-top: 1px dashed var(--border-color); padding-top: 1.5rem;">
-                    <button type="button" onclick="fillAdminCredentials()" id="admin-quick-login-btn"
-                        style="width: 100%; padding: 0.8rem; border-radius: 50px; border: 2px dashed #6366f1; background: rgba(99,102,241,0.08); color: #6366f1; font-weight: 700; cursor: pointer; transition: all 0.3s; display: flex; align-items: center; justify-content: center; gap: 8px; font-family: inherit; font-size: 0.95rem;">
-                        🔐 دخول لوحة التحكم
-                    </button>
-                </div>
+
             </form>
             <div class="auth-footer">
                 ليس لديك حساب؟ <a href="register.html" class="auth-link">إنشاء حساب جديد</a>
@@ -295,41 +289,23 @@
             if (window.supabase) {
                 window.supabase.auth.onAuthStateChange(async (event, session) => {
                     if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session) {
-                        const email = session.user.email?.toLowerCase();
-                        if (email === 'yassinesabiri2003@gmail.com') {
-                            try {
-                                await fetch('/api/ensure-profile', {
-                                    method: 'POST',
-                                    headers: {
-                                        'Content-Type': 'application/json',
-                                        'Authorization': `Bearer ${session.access_token}`
-                                    }
-                                });
-                            } catch (e) {}
-                            window.location.href = 'admin.html';
-                        } else {
-                            window.location.href = 'index.html';
-                        }
+                        try {
+                            await fetch('/api/ensure-profile', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Authorization': `Bearer ${session.access_token}`
+                                }
+                            });
+                        } catch (e) {}
+                        // Always redirect to main page - admin can access admin.html separately
+                        window.location.href = 'index.html';
                     }
                 });
             }
         });
 
-        // ─── دخول مباشر للوحة التحكم ────────────────────────────────────────
-        function fillAdminCredentials() {
-            document.getElementById('login-email').value = 'yassinesabiri2003@gmail.com';
-            document.getElementById('login-password').value = 'yasin2020';
-            document.getElementById('remember-me').checked = true;
 
-            const btn = document.getElementById('admin-quick-login-btn');
-            if (btn) {
-                btn.innerHTML = '⏳ جاري الدخول...';
-                btn.disabled = true;
-            }
-
-            // تسجيل الدخول مباشرة
-            document.getElementById('login-form').dispatchEvent(new Event('submit'));
-        }
 
         async function handleLogin(e) {
             e.preventDefault();
@@ -360,46 +336,17 @@
                     }
                     localStorage.removeItem('navito_rem_pass');
 
-                    // تحديد الدور النهائي
-                    let finalRole = user?.role || 'user';
-                    const isAdminEmail = email.toLowerCase() === 'yassinesabiri2003@gmail.com';
-
-                    if (isAdminEmail) {
-                        // نرقي الحساب عبر API لضمان تحديث قاعدة البيانات
-                        try {
-                            const sessionData = await window.supabase.auth.getSession();
-                            const token = sessionData?.data?.session?.access_token;
-                            if (token) {
-                                const upgradeRes = await fetch('/api/ensure-profile', {
-                                    method: 'POST',
-                                    headers: {
-                                        'Content-Type': 'application/json',
-                                        'Authorization': `Bearer ${token}`
-                                    }
-                                });
-                                const upgradeData = await upgradeRes.json().catch(() => ({}));
-                                console.log('ensure-profile response:', upgradeData);
-                            }
-                        } catch (upgradeErr) {
-                            console.warn('ensure-profile call failed:', upgradeErr.message);
-                        }
-                        finalRole = 'admin';
-                    }
-
                     // تحديث localStorage بالدور الصحيح
                     const savedUser = JSON.parse(localStorage.getItem('navito_current_user') || '{}');
                     localStorage.setItem('navito_current_user', JSON.stringify({
                         ...savedUser,
-                        role: finalRole
+                        role: user?.role || 'user'
                     }));
 
                     showToast('مرحباً ' + (user.fullname || email.split('@')[0]), 'success');
+                    // Always redirect to main page
                     setTimeout(() => {
-                        if (finalRole === 'admin') {
-                            window.location.href = 'admin.html';
-                        } else {
-                            window.location.href = 'index.html';
-                        }
+                        window.location.href = 'index.html';
                     }, 800);
                 }
             } catch (error) {

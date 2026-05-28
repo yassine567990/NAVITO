@@ -836,14 +836,33 @@ window.closeAccountModal = function () {
 };
 
 window.handleLogout = async function () {
-    // إزالة رسالة التأكيد المزعجة التي تمنع الخروج السلس
-    if (typeof Utils !== 'undefined' && Utils.logout) {
-        await Utils.logout();
-    } else {
-        localStorage.removeItem('navito_current_user');
-        localStorage.removeItem('navito_session');
-        window.location.reload();
+    // Close the account modal first
+    const modal = document.getElementById('account-modal');
+    if (modal) {
+        modal.classList.remove('active');
+        document.body.style.overflow = '';
     }
+
+    // Clear all auth data immediately
+    localStorage.removeItem('navito_current_user');
+    localStorage.removeItem('navito_session');
+    Object.keys(localStorage).forEach(key => {
+        if (key.startsWith('sb-')) {
+            localStorage.removeItem(key);
+        }
+    });
+
+    // Attempt Supabase signOut, then redirect
+    try {
+        if (window.supabase && window.supabase.auth) {
+            await window.supabase.auth.signOut();
+        }
+    } catch (e) {
+        console.warn('signOut error (proceeding anyway):', e.message);
+    }
+
+    // Force redirect to login page
+    window.location.href = 'login.html';
 };
 
 // ─────────────────────────────────────────────

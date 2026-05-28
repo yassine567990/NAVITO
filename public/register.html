@@ -232,21 +232,17 @@
             if (window.supabase) {
                 window.supabase.auth.onAuthStateChange(async (event, session) => {
                     if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session) {
-                        const email = session.user.email?.toLowerCase();
-                        if (email === 'yassinesabiri2003@gmail.com') {
-                            try {
-                                await fetch('/api/ensure-profile', {
-                                    method: 'POST',
-                                    headers: {
-                                        'Content-Type': 'application/json',
-                                        'Authorization': `Bearer ${session.access_token}`
-                                    }
-                                });
-                            } catch (e) {}
-                            window.location.href = 'admin.html';
-                        } else {
-                            window.location.href = 'index.html';
-                        }
+                        try {
+                            await fetch('/api/ensure-profile', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Authorization': `Bearer ${session.access_token}`
+                                }
+                            });
+                        } catch (e) {}
+                        // Always redirect to main page
+                        window.location.href = 'index.html';
                     }
                 });
             }
