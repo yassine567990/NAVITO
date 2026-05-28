@@ -8,120 +8,125 @@
 (function() { document.documentElement.style.visibility = 'hidden'; })();
 
 (async function () {
-    // انتظار تحميل Utils إذا لزم (race condition)
-    let waited = 0;
-    while (typeof Utils === 'undefined' && waited < 3000) {
-        await new Promise(r => setTimeout(r, 50));
-        waited += 50;
-    }
-
-    if (typeof Utils === 'undefined') {
-        window.location.href = 'login.html';
-        return;
-    }
-
-    // تنظيف المفاتيح القديمة
-    await Utils.init();
-
-    // التحقق من جلسة Supabase الحية (source of truth)
-    let liveSession = null;
     try {
-        // نحاول تحديث الجلسة أولاً للحصول على token جديد
-        const { data: refreshData } = await window.supabase.auth.refreshSession();
-        liveSession = refreshData?.session;
-        if (!liveSession) {
-            const { data } = await window.supabase.auth.getSession();
-            liveSession = data?.session;
+        // انتظار تحميل Utils إذا لزم (race condition)
+        let waited = 0;
+        while (typeof Utils === 'undefined' && waited < 3000) {
+            await new Promise(r => setTimeout(r, 50));
+            waited += 50;
         }
-    } catch (e) {
-        console.warn('[Admin] getSession failed:', e.message);
+
+        if (typeof Utils === 'undefined') {
+            window.location.href = 'login.html';
+            return;
+        }
+
+        // تنظيف المفاتيح القديمة
+        await Utils.init();
+
+        // التحقق من جلسة Supabase الحية (source of truth)
+        let liveSession = null;
         try {
-            const { data } = await window.supabase.auth.getSession();
-            liveSession = data?.session;
-        } catch (e2) {}
-    }
-
-    if (!liveSession || !liveSession.user) {
-        window.location.href = 'login.html';
-        return;
-    }
-
-    const userEmail = liveSession.user.email?.toLowerCase();
-    const isTargetAdmin = userEmail === 'yassinesabiri2003@gmail.com';
-
-    // التحقق من دور admin في قاعدة البيانات (source of truth)
-    let profile = null;
-    try {
-        const { data } = await window.supabase
-            .from('profiles')
-            .select('role')
-            .eq('id', liveSession.user.id)
-            .maybeSingle();
-        profile = data;
-    } catch (e) {
-        console.warn('[Admin] profile fetch failed:', e.message);
-    }
-
-    // إذا كان المستخدم غير admin لكن هو حسابنا المستهدف، نحاول الترقية التلقائية
-    if (isTargetAdmin && (!profile || profile.role !== 'admin')) {
-        console.log('[Admin] 🔄 الحساب المستهدف بدون دور admin — جاري الترقية التلقائية...');
-        try {
-            const upgradeRes = await fetch('/api/ensure-profile', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${liveSession.access_token}`
-                }
-            });
-            const upgradeData = await upgradeRes.json().catch(() => ({}));
-            console.log('✅ ensure-profile response:', upgradeData);
+            // نحاول تحديث الجلسة أولاً للحصول على token جديد
+            const { data: refreshData } = await window.supabase.auth.refreshSession();
+            liveSession = refreshData?.session;
+            if (!liveSession) {
+                const { data } = await window.supabase.auth.getSession();
+                liveSession = data?.session;
+            }
         } catch (e) {
-            console.error('⚠️ فشل استدعاء ensure-profile:', e);
+            console.warn('[Admin] getSession failed:', e.message);
+            try {
+                const { data } = await window.supabase.auth.getSession();
+                liveSession = data?.session;
+            } catch (e2) {}
         }
 
-        // إعادة التحقق من الـ profile بعد الترقية
+        if (!liveSession || !liveSession.user) {
+            window.location.href = 'login.html';
+            return;
+        }
+
+        const userEmail = liveSession.user.email?.toLowerCase();
+        const isTargetAdmin = userEmail === 'yassinesabiri2003@gmail.com';
+
+        // التحقق من دور admin في قاعدة البيانات (source of truth)
+        let profile = null;
         try {
-            const { data: refreshedProfile } = await window.supabase
+            const { data } = await window.supabase
                 .from('profiles')
                 .select('role')
                 .eq('id', liveSession.user.id)
                 .maybeSingle();
-            profile = refreshedProfile;
-            console.log('[Admin] 🔁 الدور بعد الترقية:', profile?.role);
+            profile = data;
         } catch (e) {
-            console.warn('[Admin] re-check profile failed:', e.message);
+            console.warn('[Admin] profile fetch failed:', e.message);
         }
 
-        // إذا لا يزال غير admin بعد الترقية، نفرض الدور محلياً ونسمح بالدخول
-        // (يحدث هذا إذا كانت RLS تمنع القراءة لكن الترقية نجحت)
+        // إذا كان المستخدم غير admin لكن هو حسابنا المستهدف، نحاول الترقية التلقائية
+        if (isTargetAdmin && (!profile || profile.role !== 'admin')) {
+            console.log('[Admin] 🔄 الحساب المستهدف بدون دور admin — جاري الترقية التلقائية...');
+            try {
+                const upgradeRes = await fetch('/api/ensure-profile', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Authorization: `Bearer ${liveSession.access_token}`
+                    }
+                });
+                const upgradeData = await upgradeRes.json().catch(() => ({}));
+                console.log('✅ ensure-profile response:', upgradeData);
+            } catch (e) {
+                console.error('⚠️ فشل استدعاء ensure-profile:', e);
+            }
+
+            // إعادة التحقق من الـ profile بعد الترقية
+            try {
+                const { data: refreshedProfile } = await window.supabase
+                    .from('profiles')
+                    .select('role')
+                    .eq('id', liveSession.user.id)
+                    .maybeSingle();
+                profile = refreshedProfile;
+                console.log('[Admin] 🔁 الدور بعد الترقية:', profile?.role);
+            } catch (e) {
+                console.warn('[Admin] re-check profile failed:', e.message);
+            }
+
+            // إذا لا يزال غير admin بعد الترقية، نفرض الدور محلياً ونسمح بالدخول
+            if (!profile || profile.role !== 'admin') {
+                console.warn('[Admin] ⚠️ قراءة الـ profile محجوبة بـ RLS — نسمح بالدخول للحساب المستهدف');
+                profile = { role: 'admin' };
+            }
+        }
+
+        // إذا لا يزال غير admin بعد كل المحاولات — رفض الوصول
         if (!profile || profile.role !== 'admin') {
-            console.warn('[Admin] ⚠️ قراءة الـ profile محجوبة بـ RLS — نسمح بالدخول للحساب المستهدف');
-            profile = { role: 'admin' };
+            console.warn('[Admin] ❌ رفض الوصول — ليس admin:', userEmail);
+            localStorage.removeItem('navito_current_user');
+            localStorage.removeItem('navito_session');
+            window.location.href = 'login.html';
+            return;
         }
-    }
 
-    // إذا لا يزال غير admin بعد كل المحاولات — رفض الوصول
-    if (!profile || profile.role !== 'admin') {
-        console.warn('[Admin] ❌ رفض الوصول — ليس admin:', userEmail);
-        localStorage.removeItem('navito_current_user');
-        localStorage.removeItem('navito_session');
+        // تحديث navito_current_user بالبيانات الحية
+        const adminUser = JSON.parse(localStorage.getItem('navito_current_user') || '{}');
+        localStorage.setItem('navito_current_user', JSON.stringify({
+            ...adminUser,
+            id: liveSession.user.id,
+            email: liveSession.user.email,
+            role: 'admin'
+        }));
+        localStorage.setItem('navito_session', JSON.stringify(liveSession));
+
+        // إظهار المحتوى بعد التحقق الناجح
+        document.documentElement.style.visibility = '';
+        console.log('✅ Admin access granted for:', liveSession.user.email);
+    } catch (criticalError) {
+        console.error('[Admin] Critical Initialization Error:', criticalError);
+        document.documentElement.style.visibility = '';
         window.location.href = 'login.html';
-        return;
     }
-
-    // تحديث navito_current_user بالبيانات الحية
-    const adminUser = JSON.parse(localStorage.getItem('navito_current_user') || '{}');
-    localStorage.setItem('navito_current_user', JSON.stringify({
-        ...adminUser,
-        id: liveSession.user.id,
-        email: liveSession.user.email,
-        role: 'admin'
-    }));
-    localStorage.setItem('navito_session', JSON.stringify(liveSession));
-
-    // إظهار المحتوى بعد التحقق الناجح
-    document.documentElement.style.visibility = '';
-    console.log('✅ Admin access granted for:', liveSession.user.email);
 })();
 
 
