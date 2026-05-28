@@ -196,48 +196,65 @@ async function saveProductToCloud(product) {
     };
 
     try {
-        const existingId = product._id && !product._id.toString().startsWith('NaN') ? product._id : null;
-        if (existingId && existingId !== product.id) {
-            await Utils.updateProduct(existingId, payload);
-        } else if (product.id && typeof product.id === 'string' && product.id.length > 10) {
-            await Utils.updateProduct(product.id, payload);
-        } else {
-            await Utils.createProduct(payload);
-        }
+        // Create a timeout promise
+        const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Request timed out')), 8000)
+        );
 
-        await fetchProducts();
-        showToast(t('product_saved'), 'success');
+        // Create the actual save operation promise
+        const saveOperation = async () => {
+            const existingId = product._id && !product._id.toString().startsWith('NaN') ? product._id : null;
+            if (existingId && existingId !== product.id) {
+                await Utils.updateProduct(existingId, payload);
+            } else if (product.id && typeof product.id === 'string' && product.id.length > 10) {
+                await Utils.updateProduct(product.id, payload);
+            } else {
+                await Utils.createProduct(payload);
+            }
+            await fetchProducts();
+            return true;
+        };
+
+        // Race the save operation against the timeout
+        await Promise.race([saveOperation(), timeoutPromise]);
+
+        showToast(typeof t === 'function' ? t('product_saved') : 'Product saved', 'success');
         closeModal();
         return true;
     } catch (error) {
-        console.warn('Supabase save failed, falling back to local storage:', error);
+        console.warn('Supabase save failed or timed out, falling back to local storage:', error);
         
         // Local Fallback Logic
-        let localProducts = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-        const id = product.id || product._id || `local_${Date.now()}`;
-        
-        const existingIndex = localProducts.findIndex(p => String(p.id) === String(id) || String(p._id) === String(id));
-        
-        const localProduct = {
-            ...product,
-            id: id,
-            _id: id,
-            ...payload, // Ensure it has all fields
-            lastUpdated: new Date().toISOString(),
-            isLocal: true
-        };
+        try {
+            let localProducts = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+            const id = product.id || product._id || `local_${Date.now()}`;
+            
+            const existingIndex = localProducts.findIndex(p => String(p.id) === String(id) || String(p._id) === String(id));
+            
+            const localProduct = {
+                ...product,
+                id: id,
+                _id: id,
+                ...payload,
+                lastUpdated: new Date().toISOString(),
+                isLocal: true
+            };
 
-        if (existingIndex > -1) {
-            localProducts[existingIndex] = localProduct;
-        } else {
-            localProducts.push(localProduct);
+            if (existingIndex > -1) {
+                localProducts[existingIndex] = localProduct;
+            } else {
+                localProducts.push(localProduct);
+            }
+
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(localProducts));
+            await fetchProducts();
+            
+            showToast((typeof t === 'function' ? t('product_saved') : 'Product saved') + ' (Local)', 'success');
+            closeModal();
+        } catch (fallbackError) {
+            console.error('Fallback failed:', fallbackError);
+            showToast('Failed to save product completely.', 'error');
         }
-
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(localProducts));
-        await fetchProducts();
-        
-        showToast(t('product_saved') + ' (Local)', 'success');
-        closeModal();
         return true;
     }
 }
