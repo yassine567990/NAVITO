@@ -144,7 +144,15 @@ const INITIAL_MOCK_ORDERS = [];
 
 async function fetchProducts() {
     try {
-        const cloudProducts = await Utils.getProducts();
+        const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Fetch timed out')), 5000)
+        );
+        
+        // Race the getProducts operation against the timeout
+        const cloudProducts = await Promise.race([
+            Utils.getProducts(),
+            timeoutPromise
+        ]);
         
         // Normalize Supabase snake_case to camelCase
         const normalizedCloud = cloudProducts.map(p => ({
@@ -170,7 +178,7 @@ async function fetchProducts() {
         updateDashboardStats(combined);
         return combined;
     } catch (error) {
-        console.error('Fetch error (falling back to local):', error);
+        console.error('Fetch error or timeout (falling back to local):', error);
         const localProducts = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
         window.allStoreProducts = localProducts;
         renderAdminProductsTable(localProducts);
@@ -247,7 +255,9 @@ async function saveProductToCloud(product) {
             }
 
             localStorage.setItem(STORAGE_KEY, JSON.stringify(localProducts));
-            await fetchProducts();
+            
+            // Refresh UI without waiting to prevent further hanging
+            fetchProducts().catch(e => console.error(e));
             
             showToast((typeof t === 'function' ? t('product_saved') : 'Product saved') + ' (Local)', 'success');
             closeModal();
@@ -307,11 +317,14 @@ async function fetchOrders() {
     try {
         let orders = [];
         try {
+            const timeoutPromise = new Promise((_, reject) => 
+                setTimeout(() => reject(new Error('Fetch orders timed out')), 5000)
+            );
             // First try querying Supabase via Utils.getAllOrders()
-            orders = await Utils.getAllOrders();
+            orders = await Promise.race([Utils.getAllOrders(), timeoutPromise]);
             console.log('☁️ Orders fetched from Supabase:', orders.length);
         } catch (supabaseErr) {
-            console.warn('Supabase fetch failed, falling back to LocalStorage:', supabaseErr);
+            console.warn('Supabase fetch failed or timed out, falling back to LocalStorage:', supabaseErr);
             orders = getLocalOrders();
         }
 
