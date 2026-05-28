@@ -503,7 +503,7 @@
     <script src="product-data.js?v=1.1"></script>
     <script src="modal-functions.js?v=1.1"></script>
     <script src="cart-manager.js?v=1.0"></script>
-    <script src="app.js?v=2.3"></script>
+    <script src="app.js?v=2.4"></script>
 
     <script src="add-sample-products.js?v=1.2"></script>
 
@@ -556,7 +556,7 @@
                 });
             }, { threshold: 0.1 });
 
-            document.querySelectorAll('.trust-item, .review-card, .store-product-card').forEach(el => {
+            document.querySelectorAll('.trust-item, .review-card').forEach(el => {
                 // تجنب إعادة تهيئة العناصر التي تمت رسومها المتحركة بالفعل
                 if (el.getAttribute('data-animated') === 'true') return;
                 el.style.opacity = '0';
