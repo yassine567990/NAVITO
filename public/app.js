@@ -513,14 +513,11 @@ async function getLocalStoreProducts() {
         console.warn('[NAVITO] فشل جلب المنتجات من السحابة:', e);
     }
 
-    const isProd = typeof Utils !== 'undefined' && Utils.isProduction && Utils.isProduction();
     let localProducts = [];
-    if (!isProd) {
-        try {
-            localProducts = JSON.parse(localStorage.getItem('admin_products_prod_v1') || '[]');
-        } catch (e) {
-            localProducts = [];
-        }
+    try {
+        localProducts = JSON.parse(localStorage.getItem('admin_products_prod_v1') || '[]');
+    } catch (e) {
+        localProducts = [];
     }
 
     const normalizedCloud = cloudProducts
@@ -534,12 +531,10 @@ async function getLocalStoreProducts() {
         }));
 
     const cloudIds = new Set(normalizedCloud.map(p => String(p.id)));
-    const combined = isProd
-        ? normalizedCloud
-        : [
-            ...normalizedCloud,
-            ...localProducts.filter(p => !cloudIds.has(String(p.id)) && !cloudIds.has(String(p._id)))
-        ];
+    const combined = [
+        ...normalizedCloud,
+        ...localProducts.filter(p => !cloudIds.has(String(p.id)) && !cloudIds.has(String(p._id)))
+    ];
 
     window.allStoreProducts = combined;
     return combined;
