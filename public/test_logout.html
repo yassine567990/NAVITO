@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-client.js"></script>
+    <script src="utils.js"></script>
+    <script src="app.js"></script>
+</head>
+<body>
+    <button onclick="handleLogout()" id="logout-btn">Logout</button>
+    <script>
+        // Mock local storage
+        localStorage.setItem('navito_current_user', '{"name":"test"}');
+        localStorage.setItem('navito_session', '{"access_token":"xyz"}');
+        localStorage.setItem('sb-yfjmzjsibbogfilbpfir-auth-token', '123');
+        console.log("Before logout:", Object.keys(localStorage));
+        
+        // Override window.location.href to intercept it
+        const originalHref = Object.getOwnPropertyDescriptor(window.location, 'href');
+        let redirectCalled = false;
+        Object.defineProperty(window.location, 'href', {
+            set: function(val) {
+                console.log("Redirected to:", val);
+                console.log("After logout:", Object.keys(localStorage));
+                redirectCalled = true;
+                // Don't actually redirect
+            }
+        });
+        
+        async function runTest() {
+            await window.handleLogout();
+            if (!redirectCalled) {
+                console.error("Redirect was never called!");
+            }
+            document.body.innerHTML += "<h1>TEST COMPLETE</h1>";
+        }
+        
+        setTimeout(runTest, 1000);
+    </script>
+</body>
+</html>
