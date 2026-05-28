@@ -4,8 +4,6 @@
  */
 
 // ─── Auth Guard ───────────────────────────────────────────────────────────────
-// نخفي body فوراً لمنع عرض المحتوى قبل اكتمال التحقق
-(function() { document.documentElement.style.visibility = 'hidden'; })();
 
 (async function () {
     try {
@@ -120,11 +118,9 @@
         localStorage.setItem('navito_session', JSON.stringify(liveSession));
 
         // إظهار المحتوى بعد التحقق الناجح
-        document.documentElement.style.visibility = '';
         console.log('✅ Admin access granted for:', liveSession.user.email);
     } catch (criticalError) {
         console.error('[Admin] Critical Initialization Error:', criticalError);
-        document.documentElement.style.visibility = '';
         window.location.href = 'login.html';
     }
 })();

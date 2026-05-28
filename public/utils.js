@@ -131,8 +131,10 @@ const Utils = {
         const sessionStr = localStorage.getItem('navito_session');
         if (sessionStr) {
             try {
-                const session = JSON.parse(sessionStr);
-                await window.supabase.auth.setSession(session);
+                // Ensure valid JSON format
+                JSON.parse(sessionStr);
+                // Supabase automatically restores the session from local storage,
+                // calling setSession manually here can cause race conditions or deadlocks.
             } catch (e) {
                 localStorage.removeItem('navito_session');
             }
