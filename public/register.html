@@ -228,21 +228,34 @@
             const icon = document.getElementById('theme-icon');
             if (icon) icon.textContent = isDark ? '☀️' : '🌙';
 
-            // Auto-redirect if logged in (especially for Google OAuth callback)
             if (window.supabase) {
                 window.supabase.auth.onAuthStateChange(async (event, session) => {
                     if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session) {
+                        let finalRole = 'user';
                         try {
-                            await fetch('/api/ensure-profile', {
+                            const res = await fetch('/api/ensure-profile', {
                                 method: 'POST',
                                 headers: {
                                     'Content-Type': 'application/json',
                                     'Authorization': `Bearer ${session.access_token}`
                                 }
                             });
+                            const data = await res.json();
+                            if (data && data.role) {
+                                finalRole = data.role;
+                                const savedUser = JSON.parse(localStorage.getItem('navito_current_user') || '{}');
+                                localStorage.setItem('navito_current_user', JSON.stringify({
+                                    ...savedUser,
+                                    role: finalRole
+                                }));
+                            }
                         } catch (e) {}
-                        // Always redirect to main page
-                        window.location.href = 'index.html';
+                        
+                        if (finalRole === 'admin') {
+                            window.location.href = 'admin.html';
+                        } else {
+                            window.location.href = 'index.html';
+                        }
                     }
                 });
             }

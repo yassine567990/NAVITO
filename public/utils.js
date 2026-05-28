@@ -247,7 +247,7 @@ const Utils = {
         const { data, error } = await window.supabase.auth.signInWithOAuth({
             provider: 'google',
             options: {
-                redirectTo: `${window.location.origin}/index.html`
+                redirectTo: `${window.location.origin}/login.html`
             }
         });
         if (error) throw new Error(error.message);
