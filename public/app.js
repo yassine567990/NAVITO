@@ -150,6 +150,11 @@ window.NAVITO = {
                 return;
             }
             mainGrid.innerHTML = products.map(p => NAVITO.Templates.productCard(p)).join('');
+            
+            // إعادة تهيئة الرسوم المتحركة للبطاقات الجديدة بعد حقنها في DOM
+            if (typeof window.initScrollAnimations === 'function') {
+                window.initScrollAnimations();
+            }
         }
     },
 
@@ -502,6 +507,7 @@ async function getLocalStoreProducts() {
         // Load products from Supabase
         if (typeof Utils !== 'undefined' && Utils.getProducts) {
             cloudProducts = await Utils.getProducts();
+            console.log('[NAVITO] ☁️ تم جلب', cloudProducts.length, 'منتج من السحابة');
         }
     } catch (e) {
         console.warn('[NAVITO] فشل جلب المنتجات من السحابة:', e);
